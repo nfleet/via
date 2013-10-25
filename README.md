@@ -20,6 +20,11 @@ Once those are taken care of, simply run:
 
 Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
 
+Performance
+-----------
+
+On an Amazon EC2 large instance with two cores, current benchmarks give about 5 seconds for a 1000x1000 distance matrix using Germany's road network, which is the largest and densest in Europe. 
+
 Documentation
 -------------
 
