@@ -1,0 +1,7 @@
+%module(directors="1") main
+
+%inline %{
+ #include "include/dmatrix.h"
+ extern const char* calc(char* json_data, const char* country, const int speed_profile);
+%}
+
