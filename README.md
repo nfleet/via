@@ -50,7 +50,7 @@ Requirements
 About
 -----
 
-via is a project by the CO-SKY research team at the University of Jyväskylä. 
+via is a project by the CO-SKY research team.
 
 http://www.co-sky.fi
 
