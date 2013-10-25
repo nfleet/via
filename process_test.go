@@ -15,8 +15,7 @@ func TestParsing(t *testing.T) {
 
 	var target Matrix
 
-	err = json.Unmarshal(blob, &target)
-	if err != nil {
+	if err := json.Unmarshal(blob, &target); err != nil {
 		t.Error("json unmarshal failed: " + err.Error())
 	}
 }

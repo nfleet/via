@@ -1,7 +1,9 @@
 via - fast shortest path computation
 ====================================
 
-**via** is a new, lightweight shortest path problem computation service fully implemented using RESTful techniques. via provides distance matrix calculation through a simple API.
+**via** is a new, lightweight shortest path problem computation service fully implemented using RESTful techniques. via provides distance matrix calculation through a simple API. via makes use of the fantastic (OpenStreetMap)[http://www.openstreetmap.org] map data for its computation.
+
+**Note**: currently, via relies on precomputed contraction hierarchies graphs which are built on OpenStreetMap data. They are essential for via to work.  While we have published the source code for via, we currently have not released the preprocessed graph files. We intend to release *instructions* on how to do this but due to size and bandwidth constraints, we have not yet found a feasible solution for publishing these files. Instructions will be released soon(tm).
 
 Installing via
 --------------
@@ -17,6 +19,11 @@ Once those are taken care of, simply run:
     go get github.com/co-sky-developers/via/
 
 Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
+
+Documentation
+-------------
+
+API documentation will be available soon.
 
 Acknowledgements
 ----------------
