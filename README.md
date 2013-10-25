@@ -8,7 +8,7 @@ Installing via
 
 To install, provided you have the latest development version of Go installed, run:
 
-  go get github.com/co-sky-developers/via/
+    go get github.com/co-sky-developers/via/
 
 Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
 
