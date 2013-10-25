@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"github.com/co-sky-developers/via/dmatrix"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/hex"
@@ -163,7 +164,7 @@ func (server *Server) Compute(matrixHash string) {
 
 	// todo: use nodes
 	var res string
-	res = Calc(string(json_data), string(country), int(speed_profile))
+	res = dmatrix.Calc(string(json_data), string(country), int(speed_profile))
 	// something weird might happen with rapidjson serialization - fix this
 	// case 1: missing }
 	if strings.Index(res, "}") == -1 {
