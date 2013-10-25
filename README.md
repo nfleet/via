@@ -6,16 +6,23 @@ via - fast shortest path computation
 Installing via
 --------------
 
-To install, provided you have the latest development version of Go installed, run:
+To compile via, first install the following:
+
+  * rapidson (https://code.google.com/p/rapidjson/)
+  * Go development version from source (https://code.google.com/p/go/)
+  * SWIG 2.0.11
+
+Once those are taken care of, simply run:
 
     go get github.com/co-sky-developers/via/
 
 Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
 
-You will need **rapidjson** in your system include path, and the latest development version of Go. See the [Go project page](https://code.google.com/p/go/) on how to install Go from source.
+Acknowledgements
+----------------
 
-The current working directory is required to be added in ``LD_LIBRARY_PATH`` because of the requirements of the generated
-C++ code from contraction hierarchies. See requirements for what you need to install.
+> If I have seen further it is by standing on the shoulders of giants.
+>   *- Isaac Newton*
 
 via includes source code of the contraction hierarchies project, see [here](http://algo2.iti.kit.edu/routeplanning.php) for more information, which is also licensed under the AGPL.
 
