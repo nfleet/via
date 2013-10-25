@@ -41,7 +41,7 @@ via includes source code of the contraction hierarchies project, see [here](http
 Requirements
 ------------
 
-* Go 1.2 
+* Go development version
 * Redis for fast key-value storage
 * Swig 2.0.11 for C++ wrapping
 * PostgreSQL 
