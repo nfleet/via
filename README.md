@@ -6,7 +6,15 @@ via - fast shortest path computation
 Installing via
 --------------
 
-Simply clone this repository and run ``go build -ldflags="-r ."``. The current working directory is required to be added in ``LD_LIBRARY_PATH`` because of the requirements of the generated
+To install, provided you have the latest development version of Go installed, run:
+
+  go get github.com/co-sky-developers/via/
+
+Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
+
+You will need **rapidjson** in your system include path, and the latest development version of Go. See the [Go project page](https://code.google.com/p/go/) on how to install Go from source.
+
+The current working directory is required to be added in ``LD_LIBRARY_PATH`` because of the requirements of the generated
 C++ code from contraction hierarchies. See requirements for what you need to install.
 
 via includes source code of the contraction hierarchies project, see [here](http://algo2.iti.kit.edu/routeplanning.php) for more information, which is also licensed under the AGPL.
@@ -18,7 +26,7 @@ Requirements
 * Redis for fast key-value storage
 * Swig 2.0.11 for C++ wrapping
 * PostgreSQL 
-* Preprocessed OpenStreetMap data using contraction hierarchies. We do not currently provide these, but instructions on how to compile them yourself will be given in the future.
+* Preprocessed OpenStreetMap data using contraction hierarchies. *We do not currently provide these, but instructions on how to compile them yourself will be given in the future.*
 
 About
 -----
