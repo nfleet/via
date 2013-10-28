@@ -10,22 +10,6 @@ import (
 )
 
 var allowed_speeds = []int{40, 60, 80, 100, 120}
-var allowed_countries = map[string]bool{"finland": true, "germany": true}
-
-var bounding_boxes = map[string]map[string]float64{
-	"finland": map[string]float64{
-		"long_min": 20.54,     // Border between Swe-Nor-Fin
-		"long_max": 31.5867,   // Somewhere in Ilomantsi
-		"lat_min":  59.807983, // Hanko
-		"lat_max":  70.092283, // Nuorgam
-	},
-	"germany": map[string]float64{
-		"long_min": 5.8666667, // Isenbruch, Nordrhein-Westfalen
-		"long_max": 15.033333, // Deschake, Neißeaue, Saxony
-		"lat_min":  47.270108, // Haldenwanger Eck, Oberstdorf, Bavaria
-		"lat_max":  54.9,      // Aventoft, Schleswig-Holstein
-	},
-}
 
 func contains(a int, list []int) bool {
 	for _, b := range list {
@@ -94,9 +78,9 @@ func (server *Server) Begin(ctx *web.Context) {
 			return
 		}
 		// Sanitize country.
-		if _, ok := allowed_countries[country]; !ok {
+		if _, ok := server.AllowedCountries[country]; !ok {
 			countries := ""
-			for k := range allowed_countries {
+			for k := range server.AllowedCountries {
 				countries += k + " "
 			}
 			ctx.Abort(422, "country "+country+" not allowed, must be one of: "+countries)

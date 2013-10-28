@@ -23,9 +23,10 @@ import (
 )
 
 type Config struct {
-	Port   int
-	DbUser string
-	DbName string
+	Port             int
+	DbUser           string
+	DbName           string
+	AllowedCountries map[string]bool
 }
 
 func (config *Config) String() string {
@@ -42,7 +43,7 @@ type Coord []float64
 
 type debugging bool
 
-const debug debugging = true
+const debug debugging = false
 const expiry int64 = 3600
 
 func CreateMatrixHash(matrixData, country string, speed_profile int) string {
@@ -56,6 +57,8 @@ func CreateMatrixHash(matrixData, country string, speed_profile int) string {
 // Creates a computation ID by getting an ID for it in Redis.
 // Uses matrix to create a hash for the data, which is the raw string data that
 // has not been parsed into JSON. Stores parsedData into Redis in binary format.
+// Returns the hash to be used with Redis and true whether a proxy resource was created,
+// false if the resource is new.
 func (server *Server) CreateComputation(matrix []Coord, country string, speed_profile int) (string, bool) {
 	c := server.client
 	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
@@ -81,9 +84,8 @@ func (server *Server) CreateComputation(matrix []Coord, country string, speed_pr
 	// convert data into binary things
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(matrix)
-	if err != nil {
-		fmt.Println("encode error", err)
+	if err := enc.Encode(matrix); err != nil {
+		debug.Println("encode error", err)
 	}
 
 	c.Hset(matrixHash, "data", buf.Bytes())
@@ -123,7 +125,7 @@ func (server *Server) Compute(matrixHash string) {
 	// error handling
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in Compute.", r)
+			debug.Println("Recovered in Compute.", r)
 			set_status("error")
 		}
 	}()
@@ -140,8 +142,7 @@ func (server *Server) Compute(matrixHash string) {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 
-	err = dec.Decode(&coords)
-	if err != nil {
+	if err := dec.Decode(&coords); err != nil {
 		panic("decode error: " + err.Error())
 	}
 
@@ -191,18 +192,17 @@ func (s *Server) Splash(ctx *web.Context) {
 	http.ServeFile(ctx, ctx.Request, "./splash.jpg")
 }
 
-func loadConfig(file string) Config {
+func loadConfig(file string) (Config, error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
-		panic("config file loading failed: " + err.Error())
+		return Config{}, err
 	}
 
 	var config Config
-	err = json.Unmarshal(contents, &config)
-	if err != nil {
-		panic("config file loading failed: " + err.Error())
+	if err := json.Unmarshal(contents, &config); err != nil {
+		return Config{}, err
 	}
-	return config
+	return config, nil
 }
 
 func main() {
@@ -218,7 +218,11 @@ func main() {
 	}
 
 	debug.Println("loading config from " + configFile)
-	config = loadConfig(configFile)
+	config, err := loadConfig(configFile)
+	if err != nil {
+		fmt.Printf("configuration loading from %s failed: %s\n", configFile, err.Error())
+		return
+	}
 
 	server := Server{client: redis, Config: config}
 
