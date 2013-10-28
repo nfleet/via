@@ -7,7 +7,7 @@ import argparse
 import random
 
 endpoint = '/spp/'
-root_url = 'spp.co-sky.fi'
+root_url = 'localhost'
 PROTOCOL = 'http://'
 
 finland_bbox_boundaries = {

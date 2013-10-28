@@ -5,8 +5,11 @@ import (
 	"testing"
 )
 
-var client redis.Client
-var server = Server{client, loadConfig("development.json")}
+var (
+	client    redis.Client
+	config, _ = loadConfig("development.json")
+	server    = Server{client, config}
+)
 
 // The matrix sample we will be using.
 var testPayload = struct {
@@ -55,6 +58,28 @@ func TestComputationCreation(t *testing.T) {
 	}
 }
 
-//func TestProxyCreation(t *testing.T) {
-//server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
-//}
+func TestProxyCreation(t *testing.T) {
+	// res ignored, tested by above method.
+	hash, _ := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	defer erase_computation(hash, t)
+
+	// create again
+	hash2, res2 := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	defer erase_computation(hash2, t)
+
+	if hash == hash2 {
+		t.Errorf("Proxy creation failed: %q == %q, wanted different", hash, hash2)
+	}
+
+	if res2 != true {
+		t.Error("Proxy creation didn't succeed.")
+	}
+
+	ttl, _ := client.Ttl(hash)
+	ttl2, _ := client.Ttl(hash2)
+
+	if ttl != ttl2 {
+		t.Errorf("TTL different: %q != %q, TTL times should be equal for proxy resources.", ttl, ttl2)
+	}
+
+}
