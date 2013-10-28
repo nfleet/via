@@ -1,5 +1,9 @@
 {
 	"Port": 10080,
 	"DbUser": "spp",
-	"DbTable": "spp"
+	"DbTable": "spp",
+	"AllowedCountries": {
+		"finland": true,
+		"germany": true
+	}
 }
