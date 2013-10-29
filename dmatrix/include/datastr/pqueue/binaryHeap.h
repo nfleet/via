@@ -142,6 +142,13 @@ public:
         _heap.push_back( IndexKey() ); // add a dummy element
         _heap[0].second = MetaExtKey::MIN_VALUE;
     }
+    
+    /** copy constructor **/
+    BinaryHeap(const BinaryHeap& other) {
+        insertDummy();
+        _heap.push_back( IndexKey() ); // add a dummy element
+        _heap[0].second = MetaExtKey::MIN_VALUE;
+    }
 
     /** Returns the size of this heap (= the number of elements). */
     Count size() const { 

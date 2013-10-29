@@ -108,7 +108,11 @@ public:
         assert( (searchDirections >= 1) && (searchDirections <= 2) );
     }
 
-
+    DijkstraCH(const DijkstraCH& other):_graph(other._graph)
+    {
+    assert( (searchDirections >= 1) && (searchDirections <= 2) );
+    _upperBound = Weight::MAX_VALUE;
+    }
 
     /** 
     * Unidirectional search from a given node s.
