@@ -129,6 +129,7 @@ const char* calc(char* json_data, const char* country, const int speed_profile)
 
 const char* calc_par(char* json_data, const char* country, const int speed_profile)
 {
+    std::cout << "parallel is enabled" << std::endl;
     rapidjson::Document d;
     LevelID earlyStopLevel = 10;
 
