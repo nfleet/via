@@ -127,6 +127,8 @@ const char* calc(char* json_data, const char* country, const int speed_profile)
     return result;
 }
 
+#pragma GCC optimize("openmp")
+
 const char* calc_par(char* json_data, const char* country, const int speed_profile)
 {
     std::cout << "parallel is enabled" << std::endl;
