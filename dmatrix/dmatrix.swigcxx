@@ -3,5 +3,6 @@
 %inline %{
  #include "include/dmatrix.h"
  extern const char* calc(char* json_data, const char* country, const int speed_profile);
+ extern const char* calc_par(char* json_data, const char* country, const int speed_profile);
 %}
 
