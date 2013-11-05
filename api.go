@@ -44,7 +44,7 @@ func check_coordinate_sanity(matrix []Coord, country string) (bool, error) {
 // If matrix data is missing, returns 400 Bad Request.
 // If on the other hand matrix is data is not missing,
 // but makes no sense, it returns 422 Unprocessable Entity.
-func (server *Server) Begin(ctx *web.Context) {
+func (server *Server) PostMatrix(ctx *web.Context) {
 	var hash string
 	var computed bool
 	params := []string{"matrix", "speed_profile", "country"}
@@ -99,11 +99,11 @@ func (server *Server) Begin(ctx *web.Context) {
 			return
 		}
 
-		hash, computed = server.CreateComputation(mat, country, int(speed_profile))
+		hash, computed = server.CreateMatrixComputation(mat, country, int(speed_profile))
 
 		// launch computation here if the result wasn't proxied.
 		if !computed {
-			go server.Compute(hash)
+			go server.ComputeMatrix(hash)
 		}
 	} else {
 		ctx.Abort(400, "Missing matrix data or speed profile or country. You sent: "+buf.String())
@@ -117,8 +117,8 @@ func (server *Server) Begin(ctx *web.Context) {
 
 // Returns a computation from the server as identified by the resource parameter
 // in GET.
-func (server *Server) Get(ctx *web.Context, resource string) string {
-	progress, err := server.GetComputationProgress(resource)
+func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
+	progress, err := server.GetMatrixComputationProgress(resource)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -137,13 +137,13 @@ func (server *Server) Get(ctx *web.Context, resource string) string {
 	return ""
 }
 
-func (server *Server) GetResult(ctx *web.Context, resource string) string {
+func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string {
 	if ex, _ := server.client.Exists(resource); !ex {
 		ctx.Abort(500, "Result expired. POST again.")
 		return ""
 	}
 
-	progress, err := server.GetComputationProgress(resource)
+	progress, err := server.GetMatrixComputationProgress(resource)
 	if progress != "complete" {
 		ctx.Abort(403, "Computation is not ready yet.")
 		return ""
@@ -169,7 +169,7 @@ func (server *Server) GetResult(ctx *web.Context, resource string) string {
 	return ""
 }
 
-func (server *Server) Status(ctx *web.Context) string {
+func (server *Server) GetMatrixStatus(ctx *web.Context) string {
 	db, _ := sql.Open("postgres", server.Config.String())
 	defer db.Close()
 
