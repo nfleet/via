@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hoisie/web"
+	"strconv"
 )
 
 var allowed_speeds = []int{40, 60, 80, 100, 120}
@@ -181,4 +182,47 @@ func (server *Server) GetMatrixStatus(ctx *web.Context) string {
 	}
 
 	return "OK"
+}
+
+func (server *Server) GetCoordinate(ctx *web.Context) string {
+	s_lat, lat_ok := ctx.Params["lat"]
+	s_long, long_ok := ctx.Params["long"]
+
+	// TODO(ane): implement automatic lookup of country
+	s_country, country_ok := ctx.Params["country"]
+
+	if !lat_ok || !long_ok || !country_ok {
+		ctx.Abort(400, fmt.Sprintf("Missing parameter, need lat, long, country, you gave: %q", ctx.Params))
+		return ""
+	}
+
+	lat, err := strconv.ParseFloat(s_lat, 32)
+	if err != nil {
+		ctx.Abort(400, fmt.Sprintf("Latitude %s is invalid, cannot parse!", s_lat))
+	}
+
+	long, err := strconv.ParseFloat(s_long, 32)
+	if err != nil {
+		ctx.Abort(400, fmt.Sprintf("Longitude %s is invalid, cannot parse!", s_long))
+	}
+
+	if _, ok := server.Config.AllowedCountries[s_country]; !ok {
+		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", s_country))
+	}
+
+	coord := Coord{lat, long}
+
+	corr_node, err := CorrectPoint(server.Config, coord, s_country)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+	}
+
+	response, err := json.Marshal(corr_node)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+	}
+
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
+	return string(response)
 }
