@@ -7,7 +7,7 @@ import (
 
 var (
 	client    redis.Client
-	config, _ = loadConfig("development.json")
+	config, _ = load_config("development.json")
 	server    = Server{client, config}
 )
 
