@@ -8,7 +8,6 @@ import (
 	"github.com/hoisie/web"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/bmizerany/pq"
@@ -67,26 +66,23 @@ func load_config(file string) (Config, error) {
 func parse_flags() {
 	flag.BoolVar(&Debug, "debug", false, "toggle debugging on/off")
 	flag.BoolVar(&Parallel, "par", false, "turn on parallel execution")
+	flag.Parse()
 }
 
 func main() {
+	parse_flags()
+
 	var config Config
 	var configFile string
 	var redis redis.Client
 
-	flag.Parse()
+	debug = debugging(Debug)
 
-	if Debug {
-		debug = true
-	} else {
-		debug = false
-	}
-
-	args := os.Args
-	if len(args) < 2 {
+	args := flag.Args()
+	if len(args) < 1 {
 		configFile = "production.json"
 	} else {
-		configFile = os.Args[1]
+		configFile = args[0]
 	}
 
 	debug.Println("loading config from " + configFile)
@@ -106,6 +102,9 @@ func main() {
 	web.Get("/spp/(.*)/result", server.GetMatrixResult)
 	web.Get("/spp/(.*)$", server.GetMatrix)
 	web.Post("/spp/", server.PostMatrix)
+
+	// Point
+	web.Get("/point", server.GetCoordinate)
 
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }
