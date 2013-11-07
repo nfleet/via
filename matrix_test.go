@@ -50,7 +50,7 @@ func TestMatrixHashUniqueness(t *testing.T) {
 }
 
 func TestMatrixComputationCreation(t *testing.T) {
-	hash, res := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, res := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	if res != false {
@@ -60,11 +60,11 @@ func TestMatrixComputationCreation(t *testing.T) {
 
 func TestMatrixProxyCreation(t *testing.T) {
 	// res ignored, tested by above method.
-	hash, _ := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, _ := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	// create again
-	hash2, res2 := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash2, res2 := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash2, t)
 
 	if hash == hash2 {
