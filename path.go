@@ -24,7 +24,8 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 		return Path{}, err
 	}
 
-	res := dmatrix.Calc_path(input_data, country, speed_profile)
+	debug.Printf("FUCKING PIECE OF SHIT (%s)", country)
+	res := dmatrix.Calc_path(string(input_data), country, speed_profile)
 
 	var path Path
 	if err := json.Unmarshal([]byte(res), &path); err != nil {
