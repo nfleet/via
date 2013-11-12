@@ -6,14 +6,14 @@ import (
 )
 
 type Path struct {
-	length int
-	nodes  []int
+	Length int   `json:"length"`
+	Nodes  []int `json:"nodes"`
 }
 
 func CalculatePath(source, target int, country string, speed_profile int) (Path, error) {
 	var input = struct {
-		source int
-		target int
+		Source int `json:"source"`
+		Target int `json:"target"`
 	}{
 		source,
 		target,
@@ -24,8 +24,10 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 		return Path{}, err
 	}
 
-	debug.Printf("FUCKING PIECE OF SHIT (%s)", country)
-	res := dmatrix.Calc_path(string(input_data), country, speed_profile)
+	// WHY THE HELL IS THIS NECESSARY?
+	country += "\x00"
+
+	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile)
 
 	var path Path
 	if err := json.Unmarshal([]byte(res), &path); err != nil {
