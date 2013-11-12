@@ -231,5 +231,61 @@ const char* calc_par(char* json_data, const char* country, const int speed_profi
     return result;
 }
 
+const char* calc_path(char* json_data, const char* country, const int speed_profile)
+{
+    rapidjson::Document d;
+    LevelID earlyStopLevel = 10;
 
+    std::stringstream filename;
+
+    filename << PROFILEDIR << country << "-" << speed_profile << ".sgr"; 
+
+    MyGraph* graph = loadGraph(filename.str());
+
+    d.Parse<0>(json_data);
+    
+    const rapidjson::Value& source = d["source"];
+    NodeID source_id = mapNodeID(graph, (NodeID)source.GetUint());
+        
+    const rapidjson::Value& target = d["target"];
+    NodeID target_id = mapNodeID(graph, (NodeID)target.GetUint());
+    
+
+    DijkstraManyToManyFW _dFW(graph);
+    
+    EdgeWeight w = _dFW.bidirSearch(source_id, target_id);
+    Path a;
+    _dFW.pathTo(a,target_id,-1,true,true);
+    cout << a.length()<<endl;
+    EdgeID num_edges = a.noOfEdges();
+    
+    rapidjson::Document out_doc;
+out_doc.SetObject();
+
+rapidjson::Value result;
+result.SetArray();
+rapidjson::Document::AllocatorType& allocator = out_doc.GetAllocator();
+
+for (EdgeID e = 0; e <= num_edges; e++)
+{
+    result.PushBack(a.node(e), allocator);
+}
+rapidjson::Value plen(w);
+out_doc.AddMember("length", plen, out_doc.GetAllocator());
+out_doc.AddMember("nodes", result, out_doc.GetAllocator());
+rapidjson::StringBuffer strbuf;
+rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+out_doc.Accept(writer);
+
+string res = strbuf.GetString();
+
+int len = res.length();
+char* res_char = (char*)malloc(len);
+strncpy(res_char, res.c_str(), len);
+strcat(res_char, "\0");
+
+return res_char;
+
+    
+}
 
