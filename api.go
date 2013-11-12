@@ -228,10 +228,11 @@ func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
 }
 
 func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
-	nodes, ex := ctx.Params["coords"]
+	nodes, ex := ctx.Params["nodes"]
+	country, ex2 := ctx.Params["country"]
 
-	if !ex {
-		ctx.Abort(400, fmt.Sprintf("Missing parameter: coords"))
+	if !ex || !ex2 {
+		ctx.Abort(400, fmt.Sprintf("Missing parameter: either nodes or country is missing"))
 		return ""
 	}
 
@@ -241,7 +242,7 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 		return ""
 	}
 
-	coordinates, err := GetCoordinates(server.Config, "germany", parsedNodes)
+	coordinates, err := GetCoordinates(server.Config, country, parsedNodes)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -252,6 +253,9 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 		ctx.Abort(500, err.Error())
 		return ""
 	}
+
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
 	return string(cont)
 }
 
@@ -287,5 +291,7 @@ func (server *Server) GetPath(ctx *web.Context) string {
 		return ""
 	}
 
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
 	return string(data)
 }
