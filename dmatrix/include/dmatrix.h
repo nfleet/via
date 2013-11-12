@@ -262,32 +262,30 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     EdgeID num_edges = a.noOfEdges();
     
     rapidjson::Document out_doc;
-out_doc.SetObject();
+    out_doc.SetObject();
 
-rapidjson::Value result;
-result.SetArray();
-rapidjson::Document::AllocatorType& allocator = out_doc.GetAllocator();
+    rapidjson::Value result;
+    result.SetArray();
+    rapidjson::Document::AllocatorType& allocator = out_doc.GetAllocator();
 
-for (EdgeID e = 0; e <= num_edges; e++)
-{
-    result.PushBack(a.node(e), allocator);
-}
-rapidjson::Value plen(w);
-out_doc.AddMember("length", plen, out_doc.GetAllocator());
-out_doc.AddMember("nodes", result, out_doc.GetAllocator());
-rapidjson::StringBuffer strbuf;
-rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-out_doc.Accept(writer);
+    for (EdgeID e = 0; e <= num_edges; e++)
+    {
+      result.PushBack(a.node(e), allocator);
+    }
+    rapidjson::Value plen(w);
+    out_doc.AddMember("length", plen, out_doc.GetAllocator());
+    out_doc.AddMember("nodes", result, out_doc.GetAllocator());
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+    out_doc.Accept(writer);
 
-string res = strbuf.GetString();
+    string res = strbuf.GetString();
 
-int len = res.length();
-char* res_char = (char*)malloc(len);
-strncpy(res_char, res.c_str(), len);
-strcat(res_char, "\0");
+    int len = res.length();
+    char* res_char = (char*)malloc(len);
+    strncpy(res_char, res.c_str(), len);
+    strcat(res_char, "\0");
 
-return res_char;
-
-    
+    return res_char;
 }
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type CHNode struct {
@@ -35,4 +36,47 @@ func CorrectPoint(config Config, point Coord, country string) (CHNode, error) {
 	default:
 		return CHNode{id, Coord{lat, long}}, nil
 	}
+
+}
+
+func GetCoordinates(config Config, country string, nodes []int) ([]Coord, error) {
+	// open sql
+	db, _ := sql.Open("postgres", config.String())
+	defer db.Close()
+
+	query := `
+SELECT n.coord[0], n.coord[1]
+FROM (
+	SELECT *, arr[rn] AS node_id
+	FROM (
+		SELECT *, generate_subscripts(arr, 1) AS rn
+		FROM (
+			SELECT ARRAY%s AS arr
+		) x
+	) y
+) z
+JOIN %s_nodes n ON n.id = z.node_id
+ORDER BY z.arr, z.rn;`
+
+	values := strings.Replace(fmt.Sprintf("%v", nodes), " ", ",", -1)
+	q := fmt.Sprintf(query, values, country)
+
+	var coords []Coord
+	rows, err := db.Query(q)
+	if err != nil {
+		return []Coord{}, err
+	}
+	for rows.Next() {
+		var lat, long float64
+		if err := rows.Scan(&lat, &long); err != nil {
+			return []Coord{}, err
+		}
+		coords = append(coords, Coord{lat, long})
+	}
+
+	if err := rows.Err(); err != nil {
+		return []Coord{}, err
+	}
+
+	return coords, nil
 }
