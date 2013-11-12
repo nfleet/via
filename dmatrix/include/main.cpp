@@ -4,7 +4,6 @@
 #include <omp.h>
 
 inline NodeID randomNodeID(NodeID n) {
-          
     return (NodeID)(rand() / (double)(RAND_MAX+1.0) * n);
 }
 
@@ -13,22 +12,22 @@ int main()
 srand(time(NULL));
 const NodeID noOfNodes = 10589551;
 std::string jsonInput = "";
+std::string jsonInput_s = "";
+std::string jsonInput_t = "";
 std::ostringstream ss;
-std::cout<<omp_get_max_threads();
+ss.str("");
+ss<<randomNodeID(noOfNodes);
+jsonInput_s = ss.str();
+ss.str("");
+ss<<randomNodeID(noOfNodes);
+jsonInput_t = ss.str();
 
-for(int i = 0; i < 5000; i++)
-{
-    ss.str("");
-    ss<<randomNodeID(noOfNodes);
-    jsonInput +=  ss.str();
-    jsonInput += ",";
-}
-jsonInput[jsonInput.size()-1] = ']';
-jsonInput = "{\"sources\":[" + jsonInput + "}";
 
-calc((char *)jsonInput.c_str(),"germany",40);
+jsonInput = "{\"source\":" + jsonInput_s + ",\"target\":" + jsonInput_t + "}";
+cout<<jsonInput<<endl;
+EdgeWeight path_len;
+EdgeID num_edges;
+cout<<calc_path((char *)jsonInput.c_str(),"germany",40);
 
-calc_par((char *)jsonInput.c_str(),"germany",40);
 
-return 0;
 }
