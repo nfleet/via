@@ -7,7 +7,7 @@ import (
 
 var (
 	client    redis.Client
-	config, _ = loadConfig("development.json")
+	config, _ = load_config("development.json")
 	server    = Server{client, config}
 )
 
@@ -33,7 +33,7 @@ func erase_computation(hash string, t *testing.T) {
 	}
 }
 
-func TestHashUniqueness(t *testing.T) {
+func TestMatrixHashUniqueness(t *testing.T) {
 	baseMatrix, baseCountry, baseSpeed := "foo", "finland", 40
 	h1 := CreateMatrixHash(baseMatrix, baseCountry, baseSpeed)
 	h2 := CreateMatrixHash(baseMatrix, "germany", baseSpeed)
@@ -49,8 +49,8 @@ func TestHashUniqueness(t *testing.T) {
 	testUniq(h2, h3)
 }
 
-func TestComputationCreation(t *testing.T) {
-	hash, res := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+func TestMatrixComputationCreation(t *testing.T) {
+	hash, res := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	if res != false {
@@ -58,13 +58,13 @@ func TestComputationCreation(t *testing.T) {
 	}
 }
 
-func TestProxyCreation(t *testing.T) {
+func TestMatrixProxyCreation(t *testing.T) {
 	// res ignored, tested by above method.
-	hash, _ := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, _ := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	// create again
-	hash2, res2 := server.CreateComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash2, res2 := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash2, t)
 
 	if hash == hash2 {
