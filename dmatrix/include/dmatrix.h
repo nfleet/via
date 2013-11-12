@@ -138,7 +138,7 @@ const char* calc_par(char* json_data, const char* country, const int speed_profi
 
   filename << PROFILEDIR << country << "-" << speed_profile << ".sgr"; 
 
-  MyGraph* graph = loadGraph(filename.c_str());
+  MyGraph* graph = loadGraph(filename.str());
 
   d.Parse<0>(json_data);
 
@@ -244,7 +244,7 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
 
     std::cout << std::string(country) << std::endl;
 
-    MyGraph* graph = loadGraph(filename.c_str());
+    MyGraph* graph = loadGraph(filename.str());
 
     d.Parse<0>(json_data);
     
