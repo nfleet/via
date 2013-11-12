@@ -104,7 +104,11 @@ func main() {
 	web.Post("/spp/", server.PostMatrix)
 
 	// Point
-	web.Get("/point", server.GetCoordinate)
+	web.Get("/point", server.GetCorrectCoordinate)
+	web.Get("/points", server.GetNodesToCoordinates)
+
+	// Path
+	web.Get("/path", server.GetPath)
 
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }

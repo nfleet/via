@@ -184,7 +184,7 @@ func (server *Server) GetMatrixStatus(ctx *web.Context) string {
 	return "OK"
 }
 
-func (server *Server) GetCoordinate(ctx *web.Context) string {
+func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
 	s_lat, lat_ok := ctx.Params["lat"]
 	s_long, long_ok := ctx.Params["long"]
 
@@ -225,4 +225,67 @@ func (server *Server) GetCoordinate(ctx *web.Context) string {
 	ctx.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.ContentType("application/json")
 	return string(response)
+}
+
+func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
+	nodes, ex := ctx.Params["coords"]
+
+	if !ex {
+		ctx.Abort(400, fmt.Sprintf("Missing parameter: coords"))
+		return ""
+	}
+
+	var parsedNodes []int
+	if err := json.Unmarshal([]byte(nodes), &parsedNodes); err != nil {
+		ctx.Abort(400, err.Error())
+		return ""
+	}
+
+	coordinates, err := GetCoordinates(server.Config, "germany", parsedNodes)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+
+	cont, err := json.Marshal(coordinates)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+	return string(cont)
+}
+
+func (server *Server) GetPath(ctx *web.Context) string {
+	p_source, p_source_ok := ctx.Params["source"]
+	p_target, p_target_ok := ctx.Params["target"]
+	p_country, p_country_ok := ctx.Params["country"]
+	p_sp, p_sp_ok := ctx.Params["speed_profile"]
+
+	if !p_source_ok || !p_target_ok || !p_country_ok || !p_sp_ok {
+		ctx.Abort(400, fmt.Sprintf("Missing parameter, need country, speed_profile, source, target; you gave: %q", ctx.Params))
+		return ""
+	}
+
+	if _, ok := server.Config.AllowedCountries[p_country]; !ok {
+		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", p_country))
+		return ""
+	}
+
+	source, _ := strconv.Atoi(p_source)
+	target, _ := strconv.Atoi(p_target)
+	sp, _ := strconv.Atoi(p_sp)
+
+	path, err := CalculatePath(source, target, p_country, sp)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+
+	data, err := json.Marshal(path)
+	if err != nil {
+		ctx.Abort(500, "json error: "+err.Error())
+		return ""
+	}
+
+	return string(data)
 }
