@@ -28,6 +28,7 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 	country += "\x00"
 
 	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile)
+	res = clean_json_cpp_message(res)
 
 	var path Path
 	if err := json.Unmarshal([]byte(res), &path); err != nil {
