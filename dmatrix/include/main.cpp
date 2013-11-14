@@ -27,5 +27,5 @@ int main()
 	cout<<jsonInput<<endl;
 	EdgeWeight path_len;
 	EdgeID num_edges;
-	cout<<calc_path((char *)jsonInput.c_str(),"germany",40);
+	calc_path((char *)jsonInput.c_str(),"germany",40);
 }
