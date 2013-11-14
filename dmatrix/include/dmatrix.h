@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
-
 #include <omp.h>
 using namespace std;
 
@@ -252,13 +251,11 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     const rapidjson::Value& target = d["target"];
     NodeID target_id = mapNodeID(graph, (NodeID)target.GetUint());
     
-
     DijkstraManyToManyFW _dFW(graph);
     
     EdgeWeight w = _dFW.bidirSearch(source_id, target_id);
     Path a;
     _dFW.pathTo(a,target_id,-1,true,true);
-    cout << a.length()<<endl;
     EdgeID num_edges = a.noOfEdges();
     
     rapidjson::Document out_doc;
@@ -287,7 +284,7 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     strcat(res_char, "\0");
 
     delete graph;
-    std::cout << "bang!" << std::endl;
+    //std::cout << "bang!" << std::endl;
 
     return res_char;
 }

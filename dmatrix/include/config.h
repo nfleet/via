@@ -37,7 +37,7 @@
 #define LOG_TIME(x)
 
 // activate verbose output
-#define VERBOSE(x) x
+#define VERBOSE(x) 
 #define VERBOSE2(x)
 #define VERBOSE_CONTRACT(x)
 #define VERBOSE_CONTRACT_VORONOI(x)
