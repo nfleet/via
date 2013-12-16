@@ -110,5 +110,8 @@ func main() {
 	// Path
 	web.Get("/path", server.GetPath)
 
+	// Address
+	web.Get("/address", server.GetFuzzyAddress);
+
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }
