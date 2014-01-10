@@ -170,7 +170,7 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 	return ""
 }
 
-func (server *Server) GetMatrixStatus(ctx *web.Context) string {
+func (server *Server) GetServerStatus(ctx *web.Context) string {
 	db, _ := sql.Open("postgres", server.Config.String())
 	defer db.Close()
 
@@ -248,7 +248,6 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 		return ""
 	}
 
-
 	cont, err := json.Marshal(coordinates)
 	if err != nil {
 		ctx.Abort(500, err.Error())
@@ -304,7 +303,7 @@ func (server *Server) GetFuzzyAddress(ctx *web.Context) string {
 	var limit int
 
 	if !p_addr_ok || !p_country_ok {
-		ctx.Abort(400, fmt.Sprintf("Missing address or country."));
+		ctx.Abort(400, fmt.Sprintf("Missing address or country."))
 		return ""
 	}
 
@@ -321,9 +320,9 @@ func (server *Server) GetFuzzyAddress(ctx *web.Context) string {
 
 	ctx.ContentType("application/json")
 
-	addresses, err := GetFuzzyAddress(server.Config, p_addr, p_country, limit);
+	addresses, err := GetFuzzyAddress(server.Config, p_addr, p_country, limit)
 	if err != nil {
-		ctx.Abort(500, err.Error());
+		ctx.Abort(500, err.Error())
 		return ""
 	}
 
@@ -333,9 +332,53 @@ func (server *Server) GetFuzzyAddress(ctx *web.Context) string {
 
 	addresses_json, err := json.Marshal(addresses)
 	if err != nil {
-		ctx.Abort(500, err.Error());
+		ctx.Abort(500, err.Error())
 		return ""
 	}
 
 	return string(addresses_json)
+}
+
+func (server *Server) GetCoordinatePath(ctx *web.Context) string {
+	p_source, p_source_ok := ctx.Params["source"]
+	p_target, p_target_ok := ctx.Params["target"]
+	p_country, p_country_ok := ctx.Params["country"]
+	p_sp, p_sp_ok := ctx.Params["speed_profile"]
+
+	if !p_source_ok || !p_target_ok || !p_country_ok || !p_sp_ok {
+		ctx.Abort(400, fmt.Sprintf("Missing parameter, need country, speed_profile, source, target; you gave: %q", ctx.Params))
+		return ""
+	}
+
+	if _, ok := server.Config.AllowedCountries[p_country]; !ok {
+		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", p_country))
+		return ""
+	}
+
+	var sourceAddr, targetAddr Location
+	if err := json.Unmarshal([]byte(p_source), &sourceAddr); err != nil {
+		ctx.Abort(400, err.Error())
+		return ""
+	}
+
+	if err := json.Unmarshal([]byte(p_target), &targetAddr); err != nil {
+		ctx.Abort(400, err.Error())
+		return ""
+	}
+
+	sp, _ := strconv.Atoi(p_sp)
+
+	result, err := CalculateCoordinatePathFromAddresses(server.Config, sourceAddr, targetAddr, sp)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+
+	jsonResult, err := json.Marshal(result)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+
+	return string(jsonResult)
 }
