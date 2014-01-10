@@ -96,7 +96,7 @@ func main() {
 
 	// Routes.
 	web.Get("/", server.Splash)
-	web.Get("/status", server.GetMatrixStatus)
+	web.Get("/status", server.GetServerStatus)
 
 	// Dmatrix status
 	web.Get("/spp/(.*)/result", server.GetMatrixResult)
@@ -111,7 +111,7 @@ func main() {
 	web.Get("/path", server.GetPath)
 
 	// Address
-	web.Get("/address", server.GetFuzzyAddress);
+	web.Get("/address", server.GetFuzzyAddress)
 
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }
