@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	srcJson = `{"Coordinate":{"Latitude":62.24027,"Longitude":25.74444}, "Address": {"Country": "Finland"}}`
-	trgJson = `{"Coordinate":{"Latitude":60.45138,"Longitude":22.26666}, "Address": {"Country": "Finland"}}`
+	srcJsonWithCoord = `{"Coordinate":{"Latitude":62.24027,"Longitude":25.74444}, "Address": {"Country": "Finland"}}`
+	trgJsonWithCoord = `{"Coordinate":{"Latitude":60.45138,"Longitude":22.26666}, "Address": {"Country": "Finland"}}`
+	srcJson          = `{ "Address": {"Street": "Taitoniekantie", "Country": "Finland"}}`
+	trgJson          = `{ "Address": {"Street": "Viitaniementie", "Country": "Finland"}}`
 )
 
 func BenchmarkFinlandPath(b *testing.B) {
@@ -35,11 +37,11 @@ func BenchmarkGermanyPath(b *testing.B) {
 func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
 
 	var source, target Location
-	if err := json.Unmarshal([]byte(srcJson), &source); err != nil {
+	if err := json.Unmarshal([]byte(srcJsonWithCoord), &source); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := json.Unmarshal([]byte(trgJson), &target); err != nil {
+	if err := json.Unmarshal([]byte(trgJsonWithCoord), &target); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,15 +50,14 @@ func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
 	}
 }
 
-func TestAPICalculateCoordinatePath(t *testing.T) {
+func api_coordinate_query(t *testing.T, source, target string, speed_profile int) {
 	query_string := fmt.Sprintf("source=%s&target=%s&speed_profile=%d",
-		url.QueryEscape(srcJson), url.QueryEscape(trgJson), 60)
+		url.QueryEscape(source), url.QueryEscape(target), 60)
 	request := fmt.Sprintf("http://localhost:%d/cpath?%s", server.Config.Port, query_string)
-	fmt.Println(request)
 
 	response, err := http.Get(request)
 	if err != nil || response.StatusCode != 200 {
-		t.Fatal(err)
+		t.Fatal(response)
 	} else {
 		defer response.Body.Close()
 		cont, err := ioutil.ReadAll(response.Body)
@@ -69,5 +70,14 @@ func TestAPICalculateCoordinatePath(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		t.Logf("Got path length of %d seconds (%d coords)", path.Length, len(path.Coords))
 	}
+}
+
+func TestAPICalculateCoordinatePathWithExplicitCoordinates(t *testing.T) {
+	api_coordinate_query(t, srcJsonWithCoord, trgJsonWithCoord, 60)
+}
+
+func TestAPICalculateCoordinatePathWithoutCoordinates(t *testing.T) {
+	api_coordinate_query(t, srcJson, trgJson, 60)
 }

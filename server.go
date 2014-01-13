@@ -119,6 +119,7 @@ func main() {
 
 	// Address
 	web.Get("/address", server.GetFuzzyAddress)
+	web.Post("/resolve", server.PostResolve)
 
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }
