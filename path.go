@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/co-sky-developers/via/dmatrix"
 	"strings"
 )
@@ -45,7 +44,7 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 }
 
 func IsMissingCoordinate(loc Location) bool {
-	if loc.Coordinate.Latitude == 0.0 || loc.Coordinate.Longitude == 0.0 {
+	if loc.Coordinate.Latitude == 0.0 && loc.Coordinate.Longitude == 0.0 {
 		return true
 	}
 	return false
@@ -53,12 +52,20 @@ func IsMissingCoordinate(loc Location) bool {
 
 func CalculateCoordinatePathFromAddresses(config Config, source, target Location, speed_profile int) (CoordinatePath, error) {
 	if IsMissingCoordinate(source) {
-		// resolve it
-		return CoordinatePath{}, errors.New("missing coord from source")
+		// resolve i
+		var err error
+		source, err = ResolveLocation(config, source)
+		if err != nil {
+			return CoordinatePath{}, err
+		}
 	}
 	if IsMissingCoordinate(target) {
 		// resolve it
-		return CoordinatePath{}, errors.New("missing coord from target")
+		var err error
+		target, err = ResolveLocation(config, target)
+		if err != nil {
+			return CoordinatePath{}, err
+		}
 	}
 
 	// step 1: coordinate -> node

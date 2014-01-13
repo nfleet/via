@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hoisie/web"
+	"io/ioutil"
 	"strconv"
 )
 
@@ -320,7 +321,7 @@ func (server *Server) GetFuzzyAddress(ctx *web.Context) string {
 
 	ctx.ContentType("application/json")
 
-	addresses, err := GetFuzzyAddress(server.Config, p_addr, p_country, limit)
+	addresses, err := GetFuzzyAddress(server.Config, p_addr, limit)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -375,4 +376,32 @@ func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 	}
 
 	return string(jsonResult)
+}
+
+func (server *Server) PostResolve(ctx *web.Context) string {
+	content, err := ioutil.ReadAll(ctx.Request.Body)
+	var locations, resolvedLocations []Location
+
+	// Parse params
+	if err := json.Unmarshal(content, &locations); err != nil {
+		ctx.Abort(400, err.Error())
+		return ""
+	} else {
+		for i := 0; i < len(locations); i++ {
+			newLoc, err := ResolveLocation(server.Config, locations[i])
+			if err != nil {
+				ctx.Abort(422, err.Error())
+				return ""
+			}
+			resolvedLocations = append(resolvedLocations, newLoc)
+		}
+	}
+
+	res, err := json.Marshal(resolvedLocations)
+	if err != nil {
+		ctx.Abort(500, err.Error())
+		return ""
+	}
+
+	return string(res)
 }
