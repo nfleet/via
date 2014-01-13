@@ -3,7 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"testing"
+)
+
+var (
+	srcJson = `{"Coordinate":{"Latitude":62.24027,"Longitude":25.74444}, "Address": {"Country": "Finland"}}`
+	trgJson = `{"Coordinate":{"Latitude":60.45138,"Longitude":22.26666}, "Address": {"Country": "Finland"}}`
 )
 
 func BenchmarkFinlandPath(b *testing.B) {
@@ -25,10 +33,6 @@ func BenchmarkGermanyPath(b *testing.B) {
 }
 
 func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
-	srcJson := `{"Coordinate":{"Latitude":62.24027,"Longitude":25.74444},
-				 "Address": {"Country": "Finland"}}`
-	trgJson := `{"Coordinate":{"Latitude":60.45138,"Longitude":22.26666},
-				 "Address": {"Country": "Finland"}}`
 
 	var source, target Location
 	if err := json.Unmarshal([]byte(srcJson), &source); err != nil {
@@ -39,12 +43,31 @@ func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Printf("s: %#v t: %#v\n", source, target)
-
-	result, err := CalculateCoordinatePathFromAddresses(server.Config, source, target, 60)
-	if err != nil {
+	if _, err := CalculateCoordinatePathFromAddresses(server.Config, source, target, 60); err != nil {
 		t.Fatal(err)
 	}
+}
 
-	fmt.Println(result.Coords)
+func TestAPICalculateCoordinatePath(t *testing.T) {
+	query_string := fmt.Sprintf("source=%s&target=%s&speed_profile=%d",
+		url.QueryEscape(srcJson), url.QueryEscape(trgJson), 60)
+	request := fmt.Sprintf("http://localhost:%d/cpath?%s", server.Config.Port, query_string)
+	fmt.Println(request)
+
+	response, err := http.Get(request)
+	if err != nil || response.StatusCode != 200 {
+		t.Fatal(err)
+	} else {
+		defer response.Body.Close()
+		cont, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var path CoordinatePath
+		err = json.Unmarshal(cont, &path)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 }

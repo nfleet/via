@@ -69,6 +69,12 @@ func parse_flags() {
 	flag.Parse()
 }
 
+func test_connection() {
+	// redis
+	fmt.Printf("loading services")
+
+}
+
 func main() {
 	parse_flags()
 
@@ -109,6 +115,7 @@ func main() {
 
 	// Path
 	web.Get("/path", server.GetPath)
+	web.Get("/cpath", server.GetCoordinatePath)
 
 	// Address
 	web.Get("/address", server.GetFuzzyAddress)
