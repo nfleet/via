@@ -375,6 +375,7 @@ func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 		return ""
 	}
 
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.ContentType("application/json")
 	return string(jsonResult)
 }
@@ -404,6 +405,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	}
 
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
 	ctx.ContentType("application/json")
 	return string(res)
 }
