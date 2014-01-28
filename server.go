@@ -76,7 +76,9 @@ func test_connection() {
 }
 
 func Options(ctx *web.Context, route string) string {
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.SetHeader("Access-Control-Allow-Origin", "*", false)
+	ctx.SetHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, If-None-Match", false)
+	ctx.SetHeader("Access-control-Allow-Methods", "GET, PUT, POST, DELETE", false)
 	ctx.ContentType("application/json")
 	return "{}"
 }
