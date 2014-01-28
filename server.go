@@ -75,6 +75,12 @@ func test_connection() {
 
 }
 
+func Options(ctx *web.Context, route string) string {
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
+	return "{}"
+}
+
 func main() {
 	parse_flags()
 
@@ -120,6 +126,8 @@ func main() {
 	// Address
 	web.Get("/address", server.GetFuzzyAddress)
 	web.Post("/resolve", server.PostResolve)
+
+	web.Match("OPTIONS", "/(.*)", Options)
 
 	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
 }
