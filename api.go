@@ -375,6 +375,7 @@ func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 		return ""
 	}
 
+	ctx.ContentType("application/json")
 	return string(jsonResult)
 }
 
@@ -403,5 +404,6 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	}
 
+	ctx.ContentType("application/json")
 	return string(res)
 }
