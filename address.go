@@ -17,12 +17,15 @@ type Location struct {
 }
 
 type Address struct {
-	Street      string
-	House       string
-	HouseNumber string
-	City        string
-	Country     string
-	Similarity  float64
+	Street     string
+	City       string
+	Country    string
+	Region     string
+	PostalCode string
+
+	ApartmentLetter string
+	ApartmentNumber int
+	Similarity      float64
 }
 
 func GetFuzzyAddress(config Config, address string, count int) ([]Location, error) {
