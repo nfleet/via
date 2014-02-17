@@ -45,19 +45,19 @@ func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := CalculateCoordinatePathFromAddresses(server.Config, source, target, 60); err != nil {
+	if _, err := CalculateCoordinatePathFromAddresses(server.Config, source, target, 100); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func api_coordinate_query(t *testing.T, source, target string, speed_profile int) {
 	query_string := fmt.Sprintf("source=%s&target=%s&speed_profile=%d",
-		url.QueryEscape(source), url.QueryEscape(target), 60)
+		url.QueryEscape(source), url.QueryEscape(target), speed_profile)
 	request := fmt.Sprintf("http://localhost:%d/cpath?%s", server.Config.Port, query_string)
 
 	response, err := http.Get(request)
 	if err != nil || response.StatusCode != 200 {
-		t.Fatal(response)
+		t.Fatal("api response: " + err.Error())
 	} else {
 		defer response.Body.Close()
 		cont, err := ioutil.ReadAll(response.Body)
@@ -70,14 +70,14 @@ func api_coordinate_query(t *testing.T, source, target string, speed_profile int
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("Got path length of %d seconds (%d coords)", path.Length, len(path.Coords))
+		t.Logf("Got path length of %d m in %d seconds (%d coords)", path.Distance, path.Time, len(path.Coords))
 	}
 }
 
 func TestAPICalculateCoordinatePathWithExplicitCoordinates(t *testing.T) {
-	api_coordinate_query(t, srcJsonWithCoord, trgJsonWithCoord, 60)
+	api_coordinate_query(t, srcJsonWithCoord, trgJsonWithCoord, 100)
 }
 
 func TestAPICalculateCoordinatePathWithoutCoordinates(t *testing.T) {
-	api_coordinate_query(t, srcJson, trgJson, 60)
+	api_coordinate_query(t, srcJson, trgJson, 100)
 }
