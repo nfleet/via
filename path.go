@@ -56,8 +56,7 @@ func IsMissingCoordinate(loc Location) bool {
 
 func calculate_distance(config Config, nodes []int, country string) (int, error) {
 	if (len(nodes) < 2) {
-		e := fmt.Sprintf("Not enough nodes in path, need at least two, got %d. Check that coordinates are correct.", len(nodes))
-		return 0, errors.New(e)
+		return 0, nil
 	}
 
 	db, _ := sql.Open("postgres", config.String())
