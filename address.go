@@ -36,6 +36,7 @@ func GetFuzzyAddress(config Config, address string, count int) ([]Location, erro
 	if err != nil {
 		return nil, err
 	}
+	defer db.Close()
 
 	q := fmt.Sprintf("SELECT name, city, coord[0], coord[1], sml from get_appr('%s') LIMIT %d", address, count)
 	rows, err := db.Query(q)
