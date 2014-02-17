@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/co-sky-developers/via/dmatrix"
+	"github.com/nfleet/via/dmatrix"
 	"strings"
 	"time"
 )
