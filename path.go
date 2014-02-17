@@ -55,6 +55,11 @@ func IsMissingCoordinate(loc Location) bool {
 }
 
 func calculate_distance(config Config, nodes []int, country string) (int, error) {
+	if (len(nodes) < 2) {
+		e := fmt.Sprintf("Not enough nodes in path, need at least two, got %d. Check that coordinates are correct.", len(nodes))
+		return 0, errors.New(e)
+	}
+
 	db, _ := sql.Open("postgres", config.String())
 	defer db.Close()
 
@@ -66,13 +71,14 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 		edgePairs = append(edgePairs, s)
 	}
 
-	fmt.Printf("%d and %d\n", len(edgePairs), len(nodes))
-
-	s := strings.Join(edgePairs, ",")
+	fmt.Println(nodes)
+	fmt.Println(edgePairs)
+	edges := strings.Join(edgePairs, ",")
 
 	q := `select sum(dist) from (values%s) as t left join %s_speed_edges on column1=id1 and column2=id2`
 
-	q = fmt.Sprintf(q, s, country)
+	q = fmt.Sprintf(q, edges, country)
+	fmt.Println(q)
 
 	var sum float64
 	err := db.QueryRow(q).Scan(&sum)
@@ -130,6 +136,8 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 	if err != nil {
 		return CoordinatePath{}, err
 	}
+
+	fmt.Println(path.Nodes)
 
 	// step 4: get distance
 	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(source.Address.Country))
