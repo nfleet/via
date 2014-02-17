@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
-	"github.com/co-sky-developers/via/dmatrix"
+	"errors"
+	"fmt"
+	"github.com/nfleet/via/dmatrix"
 	"strings"
 )
 
@@ -12,8 +15,9 @@ type Path struct {
 }
 
 type CoordinatePath struct {
-	Length int     `json:"length"`
-	Coords []Coord `json:"coords"`
+	Distance int     `json:"distance"`
+	Time     int     `json:"time"`
+	Coords   []Coord `json:"coords"`
 }
 
 func CalculatePath(source, target int, country string, speed_profile int) (Path, error) {
@@ -33,7 +37,7 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 	// WHY THE HELL IS THIS NECESSARY?
 	country += "\x00"
 
-	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile)
+	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile) 
 	res = clean_json_cpp_message(res)
 
 	var path Path
@@ -48,6 +52,40 @@ func IsMissingCoordinate(loc Location) bool {
 		return true
 	}
 	return false
+}
+
+func calculate_distance(config Config, nodes []int, country string) (int, error) {
+	db, _ := sql.Open("postgres", config.String())
+	defer db.Close()
+
+	var edgePairs []string
+
+	for i := 0; i < len(nodes) - 1; i++ {
+		edgeStart, edgeEnd := nodes[i], nodes[i + 1]
+		s := fmt.Sprintf("(%d,%d)", edgeStart, edgeEnd)
+		edgePairs = append(edgePairs, s)
+	}
+
+	fmt.Printf("%d and %d\n", len(edgePairs), len(nodes))
+
+	s := strings.Join(edgePairs, ",")
+
+	q := `select sum(dist) from (values%s) as t left join %s_speed_edges on column1=id1 and column2=id2`
+
+	q = fmt.Sprintf(q, s, country)
+
+	var sum float64
+	err := db.QueryRow(q).Scan(&sum)
+	switch {
+	case err == sql.ErrNoRows:
+		return 0, errors.New("No distance found. Check points exist.")
+	case err != nil:
+		return 0, err
+	default:
+		fmt.Println(sum)
+		return int(sum), nil
+	}
+
 }
 
 func CalculateCoordinatePathFromAddresses(config Config, source, target Location, speed_profile int) (CoordinatePath, error) {
@@ -93,5 +131,11 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 		return CoordinatePath{}, err
 	}
 
-	return CoordinatePath{Length: path.Length, Coords: coordinateList}, nil
+	// step 4: get distance
+	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(source.Address.Country))
+	if err != nil {
+		return CoordinatePath{}, err
+	}
+
+	return CoordinatePath{Distance: distance, Time: path.Length, Coords: coordinateList}, nil
 }
