@@ -12,7 +12,7 @@ import (
 
 func TestResolvationForAddress(t *testing.T) {
 	location := Location{
-		Address: Address{Street: "Esplanadi", Country: "finland"},
+		Address: Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"},
 	}
 
 	loc, err := ResolveLocation(server.Config, location)
