@@ -80,7 +80,7 @@ func TestAPIResolvationCoordinate(t *testing.T) {
 
 func TestAPIResolvationWithoutCoordinate(t *testing.T) {
 	locations := []Location{
-		{Address: Address{Street: "Esplanadi", Country: "finland"}},
+		{Address: Address{Street: "Esplanadi", City: "Helsinki", Country: "finland"}},
 	}
 	api_test_resolve(t, locations)
 }
