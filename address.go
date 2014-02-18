@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"strings"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -40,9 +42,7 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	}
 	defer db.Close()
 
-	subq := fmt.Sprintf("SELECT id, sml from get_appr('%s')", address.Street)
-
-	q := fmt.Sprintf("with t1 as (%s UNION %s WHERE city LIKE '%%%s%%') select t1.id,t1.sml,city,street,house_num,coord[0],coord[1] from addresses,t1 where addresses.id = t1.id order by sml desc, (house_num = %d) desc;", subq, subq, address.City, address.HouseNumber)
+	q := fmt.Sprintf("SELECT id, coord, city, name, sml from get_appr2('%s') WHERE city LIKE '%%%s%%' ORDER BY sml DESC", address.Street, address.City)
 
 	rows, err := db.Query(q)
 
@@ -54,16 +54,29 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 
 	for rows.Next() {
 		var (
-			street_name, city string
-			id, house_num int
-			lat, long, conf float64
+			coord, street_name, city string
+			id int
+			conf float64
 		)
 
-		if err := rows.Scan(&id, &conf, &city, &street_name, &house_num, &lat, &long); err != nil {
+		if err := rows.Scan(&id, &coord, &city, &street_name, &conf); err != nil {
 			return []Location{}, err
 		}
 
-		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf*100}, Coordinate{Latitude: lat, Longitude: long, System: "WGS84"}})
+		// parse stupid coordinates
+		var KORDIKYRPÄ [][]float64
+
+		coord = strings.Replace(coord, "(", "[", -1)
+		coord = strings.Replace(coord, ")", "]", -1)
+
+		if err := json.Unmarshal([]byte(coord), &KORDIKYRPÄ); err != nil {
+			fmt.Println(coord)
+			return []Location{}, err
+		}
+
+		coordinate := KORDIKYRPÄ[0]
+
+		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf*100}, Coordinate{Latitude: coordinate[1], Longitude: coordinate[0], System: "WGS84"}})
 	}
 
 	if err := rows.Err(); err != nil {
