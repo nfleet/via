@@ -40,7 +40,10 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	}
 	defer db.Close()
 
-	q := fmt.Sprintf("SELECT name, city, house_num, coord[0], coord[1], sml from get_appr('%s') WHERE house_num=%d LIMIT %d", address.Street, address.HouseNumber, count)
+	subq := fmt.Sprintf("SELECT id, sml from get_appr('%s')", address.Street)
+
+	q := fmt.Sprintf("with t1 as (%s UNION %s WHERE city LIKE '%%%s%%') select t1.id,t1.sml,city,street,house_num,coord[0],coord[1] from addresses,t1 where addresses.id = t1.id order by sml desc, (house_num = %d) desc;", subq, subq, address.City, address.HouseNumber)
+
 	rows, err := db.Query(q)
 
 	if err != nil {
@@ -52,11 +55,11 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	for rows.Next() {
 		var (
 			street_name, city string
-			house_num int
+			id, house_num int
 			lat, long, conf float64
 		)
 
-		if err := rows.Scan(&street_name, &city, &house_num, &lat, &long, &conf); err != nil {
+		if err := rows.Scan(&id, &conf, &city, &street_name, &house_num, &lat, &long); err != nil {
 			return []Location{}, err
 		}
 
