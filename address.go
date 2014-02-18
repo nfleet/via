@@ -30,7 +30,7 @@ type Address struct {
 	AdditionalInfo string
 }
 
-func GetFuzzyAddress(config Config, address string, count int) ([]Location, error) {
+func GetFuzzyAddress(config Config, address Address, count int) ([]Location, error) {
 	newconf := Config(config)
 	newconf.DbName = "trgm_test"
 
@@ -40,7 +40,7 @@ func GetFuzzyAddress(config Config, address string, count int) ([]Location, erro
 	}
 	defer db.Close()
 
-	q := fmt.Sprintf("SELECT name, city, coord[0], coord[1], sml from get_appr('%s') LIMIT %d", address, count)
+	q := fmt.Sprintf("SELECT name, city, house_num, coord[0], coord[1], sml from get_appr('%s') WHERE house_num=%d LIMIT %d", address.Street, address.HouseNumber, count)
 	rows, err := db.Query(q)
 
 	if err != nil {
@@ -52,14 +52,15 @@ func GetFuzzyAddress(config Config, address string, count int) ([]Location, erro
 	for rows.Next() {
 		var (
 			street_name, city string
+			house_num int
 			lat, long, conf float64
 		)
 
-		if err := rows.Scan(&street_name, &city, &lat, &long, &conf); err != nil {
+		if err := rows.Scan(&street_name, &city, &house_num, &lat, &long, &conf); err != nil {
 			return []Location{}, err
 		}
 
-		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf}, Coordinate{Latitude: lat, Longitude: long, System: "WGS84"}})
+		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf*100}, Coordinate{Latitude: lat, Longitude: long, System: "WGS84"}})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -71,9 +72,8 @@ func GetFuzzyAddress(config Config, address string, count int) ([]Location, erro
 
 func ResolveLocation(config Config, location Location) (Location, error) {
 	if IsMissingCoordinate(location) {
-		street := location.Address.Street
-		if street != "" {
-			locs, err := GetFuzzyAddress(config, street, 1)
+		if location.Address.Street != "" {
+			locs, err := GetFuzzyAddress(config, location.Address, 1)
 			if err != nil {
 				return Location{}, err
 			}
@@ -84,6 +84,7 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 			}
 
 			location.Coordinate = locs[0].Coordinate
+			location.Address = locs[0].Address
 			return location, nil
 		} else {
 			return Location{}, errors.New("Street empty, cannot search.")
