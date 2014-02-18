@@ -345,14 +345,14 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	// Parse params
 	t := time.Now()
 	if err := json.Unmarshal(content, &locations); err != nil {
-		ctx.Abort(400, err.Error())
+		ctx.Abort(400, "Couldn't unmarshal the JSON")
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
 			newLoc, err := ResolveLocation(server.Config, locations[i])
 			if err != nil {
 				ctx.Abort(422, err.Error())
-				return ""
+				return "aaaaaaa"
 			}
 			resolvedLocations = append(resolvedLocations, newLoc)
 		}
@@ -364,7 +364,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	res, err := json.Marshal(resolvedLocations)
 	if err != nil {
 		ctx.Abort(500, err.Error())
-		return ""
+		return "eeeee"
 	}
 
 	ctx.Header().Set("Access-Control-Allow-Origin", "*")
