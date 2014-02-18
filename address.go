@@ -90,7 +90,8 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 			location.Address = locs[0].Address
 			return location, nil
 		} else {
-			return Location{}, errors.New("Street empty, cannot search.")
+			// skip
+			return Location{}, nil
 		}
 	} else {
 		if location.Address.Country == "" {
