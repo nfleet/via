@@ -21,10 +21,10 @@ func TestResolvationForAddress(t *testing.T) {
 	}
 
 	if IsMissingCoordinate(loc) {
-		t.Fatalf("%q missing coordinates", loc)
+		t.Fatalf("Geocoding failed: %#v is missing coordinates", loc)
 	}
 
-	t.Logf("Resolved %v => %v", location, loc)
+	t.Logf("Geocoded %v => %v", location, loc)
 }
 
 func TestResolvationCoordinateFixing(t *testing.T) {
@@ -39,10 +39,10 @@ func TestResolvationCoordinateFixing(t *testing.T) {
 	}
 
 	if IsMissingCoordinate(loc) {
-		t.Fatalf("%q missing coordinates", loc)
+		t.Fatalf("Error: %#v is missing coordinates", loc)
 	}
 
-	t.Logf("Resolved %v => %v", location, loc)
+	t.Logf("Fixed coordinates %v => %v", location.Coordinate, loc.Coordinate)
 }
 
 func api_test_resolve(t *testing.T, locations []Location) {
@@ -66,7 +66,7 @@ func api_test_resolve(t *testing.T, locations []Location) {
 			t.Fatal(string(cont), err)
 		}
 		for i, loc := range resolved {
-			t.Logf("Resolved %v to have coords %v", locations[i], loc.Coordinate)
+			t.Logf("Resolved %v to have coords %v", locations[i], loc)
 		}
 	}
 }
