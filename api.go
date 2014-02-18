@@ -297,49 +297,6 @@ func (server *Server) GetPath(ctx *web.Context) string {
 	return string(data)
 }
 
-func (server *Server) GetFuzzyAddress(ctx *web.Context) string {
-	p_addr, p_addr_ok := ctx.Params["address"]
-	p_country, p_country_ok := ctx.Params["country"]
-	p_limit, p_limit_ok := ctx.Params["limit"]
-	var limit int
-
-	if !p_addr_ok || !p_country_ok {
-		ctx.Abort(400, fmt.Sprintf("Missing address or country."))
-		return ""
-	}
-
-	if !p_limit_ok {
-		limit = 5
-	} else {
-		limit, _ = strconv.Atoi(p_limit)
-	}
-
-	if p_country != "finland" {
-		ctx.Abort(400, fmt.Sprintf("Only Finland is supported atm."))
-		return ""
-	}
-
-	ctx.ContentType("application/json")
-
-	addresses, err := GetFuzzyAddress(server.Config, p_addr, limit)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	if addresses == nil {
-		return "{}"
-	}
-
-	addresses_json, err := json.Marshal(addresses)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	return string(addresses_json)
-}
-
 func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 	p_source, p_source_ok := ctx.Params["source"]
 	p_target, p_target_ok := ctx.Params["target"]
