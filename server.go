@@ -126,7 +126,6 @@ func main() {
 	web.Get("/cpath", server.GetCoordinatePath)
 
 	// Address
-	web.Get("/address", server.GetFuzzyAddress)
 	web.Post("/resolve", server.PostResolve)
 
 	web.Match("OPTIONS", "/(.*)", Options)
