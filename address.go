@@ -91,7 +91,8 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 			return location, nil
 		} else {
 			// skip
-			return Location{}, nil
+			location.Address.Confidence = 30.0
+			return location, nil
 		}
 	} else {
 		if location.Address.Country == "" {
