@@ -70,7 +70,6 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 		coord = strings.Replace(coord, ")", "]", -1)
 
 		if err := json.Unmarshal([]byte(coord), &KORDIKYRPÄ); err != nil {
-			fmt.Println(coord)
 			return []Location{}, err
 		}
 

@@ -356,6 +356,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		}
 	}
 
+	fmt.Printf("resolved %d locations\n", len(resolvedLocations))
 	res, err := json.Marshal(resolvedLocations)
 	if err != nil {
 		ctx.Abort(500, err.Error())
