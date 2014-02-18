@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 	"github.com/hoisie/web"
 	"io/ioutil"
 	"strconv"
@@ -342,6 +343,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	var locations, resolvedLocations []Location
 
 	// Parse params
+	t := time.Now()
 	if err := json.Unmarshal(content, &locations); err != nil {
 		ctx.Abort(400, err.Error())
 		return ""
@@ -356,7 +358,9 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		}
 	}
 
-	fmt.Printf("resolved %d locations\n", len(resolvedLocations))
+	e := time.Since(t)
+
+	fmt.Printf("resolved %d locations in %s\n", len(resolvedLocations), e)
 	res, err := json.Marshal(resolvedLocations)
 	if err != nil {
 		ctx.Abort(500, err.Error())
