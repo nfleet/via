@@ -9,6 +9,7 @@ import (
 type Coordinate struct {
 	Latitude  float64
 	Longitude float64
+	System string
 }
 
 type Location struct {
@@ -18,14 +19,15 @@ type Location struct {
 
 type Address struct {
 	Street     string
+	HouseNumber int
 	City       string
 	Country    string
 	Region     string
 	PostalCode string
-
+	Confidence float64
 	ApartmentLetter string
 	ApartmentNumber int
-	Similarity      float64
+	AdditionalInfo string
 }
 
 func GetFuzzyAddress(config Config, address string, count int) ([]Location, error) {
@@ -50,15 +52,14 @@ func GetFuzzyAddress(config Config, address string, count int) ([]Location, erro
 	for rows.Next() {
 		var (
 			street_name, city string
-			lat, long, sml    float64
+			lat, long, conf float64
 		)
 
-		if err := rows.Scan(&street_name, &city, &lat, &long, &sml); err != nil {
+		if err := rows.Scan(&street_name, &city, &lat, &long, &conf); err != nil {
 			return []Location{}, err
 		}
-		locations = append(locations,
-			Location{Address{Street: street_name, City: city, Similarity: sml},
-				Coordinate{Latitude: lat, Longitude: long}})
+
+		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf}, Coordinate{Latitude: lat, Longitude: long, System: "WGS84"}})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -78,8 +79,8 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 			}
 
 			if len(locs) == 0 {
-				e := errors.New("Couldn't find any address for street " + street)
-				return Location{}, e
+				location.Address.Confidence = 30.0
+				return location, nil
 			}
 
 			location.Coordinate = locs[0].Coordinate
