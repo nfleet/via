@@ -70,14 +70,11 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 		edgePairs = append(edgePairs, s)
 	}
 
-	fmt.Println(nodes)
-	fmt.Println(edgePairs)
 	edges := strings.Join(edgePairs, ",")
 
 	q := `select sum(dist) from (values%s) as t left join %s_speed_edges on column1=id1 and column2=id2`
 
 	q = fmt.Sprintf(q, edges, country)
-	fmt.Println(q)
 
 	var sum float64
 	err := db.QueryRow(q).Scan(&sum)
@@ -87,7 +84,6 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 	case err != nil:
 		return 0, err
 	default:
-		fmt.Println(sum)
 		return int(sum), nil
 	}
 
@@ -136,7 +132,6 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 		return CoordinatePath{}, err
 	}
 
-	fmt.Println(path.Nodes)
 
 	// step 4: get distance
 	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(source.Address.Country))
