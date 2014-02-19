@@ -10,20 +10,20 @@ Installing via
 
 To compile via, first install the following:
 
-  * rapidson (https://code.google.com/p/rapidjson/)
+  * rapidjson (https://code.google.com/p/rapidjson/)
   * Go development version from source (https://code.google.com/p/go/)
   * SWIG 2.0.11
 
 Once those are taken care of, simply run:
 
-    go get github.com/co-sky-developers/via/
+    go get -u github.com/nfleet/via/
 
-Then copy the ``production.json`` or ``development.json`` configuration files and simply call it by running ``via``.
+Then copy the ``development.json`` configuration files, modify it accordingly, and simply call it by running ``via``.
 
 Performance
 -----------
 
-On an Amazon EC2 large instance with two cores, current benchmarks give about 5 seconds for a 1000x1000 distance matrix using Germany's road network, which is the largest and densest in Europe. 
+On an Amazon EC2 large instance with two cores, current benchmarks give about 5 seconds for a 1000x1000 distance matrix using the German road network, which is the largest and densest in Europe (ca. 100 million graph nodes).
 
 Documentation
 -------------
@@ -50,7 +50,7 @@ Requirements
 About
 -----
 
-via is a project by the CO-SKY research team.
+via is a project by [NFleet](http://www.nfleet.fi).
 
 http://www.co-sky.fi
 
