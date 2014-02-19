@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 	"github.com/hoisie/web"
 	"io/ioutil"
 	"strconv"
@@ -201,15 +200,18 @@ func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
 	lat, err := strconv.ParseFloat(s_lat, 32)
 	if err != nil {
 		ctx.Abort(400, fmt.Sprintf("Latitude %s is invalid, cannot parse!", s_lat))
+		return ""
 	}
 
 	long, err := strconv.ParseFloat(s_long, 32)
 	if err != nil {
 		ctx.Abort(400, fmt.Sprintf("Longitude %s is invalid, cannot parse!", s_long))
+		return ""
 	}
 
 	if _, ok := server.Config.AllowedCountries[s_country]; !ok {
 		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", s_country))
+		return ""
 	}
 
 	coord := Coord{lat, long}
@@ -217,11 +219,13 @@ func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
 	corr_node, err := CorrectPoint(server.Config, coord, s_country)
 	if err != nil {
 		ctx.Abort(500, err.Error())
+		return ""
 	}
 
 	response, err := json.Marshal(corr_node)
 	if err != nil {
 		ctx.Abort(500, err.Error())
+		return ""
 	}
 
 	ctx.Header().Set("Access-Control-Allow-Origin", "*")
@@ -343,28 +347,22 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	var locations, resolvedLocations []Location
 
 	// Parse params
-	t := time.Now()
 	if err := json.Unmarshal(content, &locations); err != nil {
-		ctx.Abort(400, "Couldn't unmarshal the JSON")
+		ctx.Abort(400, "Couldn't parse JSON: " + err.Error())
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
 			newLoc, err := ResolveLocation(server.Config, locations[i])
 			if err != nil {
-				ctx.Abort(422, err.Error())
-				return "aaaaaaa"
+				ctx.Abort(422, "Resolvation failure: " + err.Error())
 			}
 			resolvedLocations = append(resolvedLocations, newLoc)
 		}
 	}
 
-	e := time.Since(t)
-
-	fmt.Printf("resolved %d locations in %s\n", len(resolvedLocations), e)
 	res, err := json.Marshal(resolvedLocations)
 	if err != nil {
 		ctx.Abort(500, err.Error())
-		return "eeeee"
 	}
 
 	ctx.Header().Set("Access-Control-Allow-Origin", "*")
