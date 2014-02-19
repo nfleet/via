@@ -52,8 +52,6 @@ About
 
 via is a project by [NFleet](http://www.nfleet.fi).
 
-http://www.co-sky.fi
-
 License
 -------
 
