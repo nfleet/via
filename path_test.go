@@ -70,7 +70,7 @@ func api_coordinate_query(t *testing.T, source, target string, speed_profile int
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("Got path length of %d m in %d seconds (%d coords)", path.Distance, path.Time, len(path.Coords))
+		t.Logf("Got path length of %d meters and %d seconds (%d coords)", path.Distance, path.Time, len(path.Coords))
 	}
 }
 

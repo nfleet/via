@@ -85,12 +85,16 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	return locations, nil
 }
 
+// Resolves a location from the database.
+// Returns 20 when everything fails (i.e. database problem), 30 when
+// an address could not be found or when the street wasn't supplied.
 func ResolveLocation(config Config, location Location) (Location, error) {
 	if IsMissingCoordinate(location) {
 		if location.Address.Street != "" {
 			locs, err := GetFuzzyAddress(config, location.Address, 1)
 			if err != nil {
-				return Location{}, err
+				location.Address.Confidence = 20.0
+				return location, err
 			}
 
 			if len(locs) == 0 {
@@ -108,7 +112,7 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 		}
 	} else {
 		if location.Address.Country == "" {
-			return Location{}, errors.New("Must provide country in Location.Address!")
+			return location, errors.New("Must provide country in Location.Address!")
 		}
 
 		coord := location.Coordinate
@@ -116,7 +120,7 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 			Coord{coord.Latitude, coord.Longitude}, location.Address.Country)
 
 		if err != nil {
-			return Location{}, err
+			return location, err
 		}
 
 		location.Coordinate.Latitude = correctCoord.Coord[0]
