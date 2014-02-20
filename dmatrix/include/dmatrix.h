@@ -240,8 +240,12 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     std::stringstream filename;
 
     filename << PROFILEDIR << std::string(country) << "-" << speed_profile << ".sgr"; 
-
+    
+    const clock_t begin_time = clock();
+    cout<<"Start "<<endl;
     MyGraph* graph = loadGraph(filename.str());
+    cout <<"Deserialization: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    cout<<"\n";
 
     d.Parse<0>(json_data);
     
@@ -269,6 +273,7 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     {
       result.PushBack(a.node(e), allocator);
     }
+    
     rapidjson::Value plen(w);
     out_doc.AddMember("length", plen, out_doc.GetAllocator());
     out_doc.AddMember("nodes", result, out_doc.GetAllocator());
@@ -282,10 +287,78 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     char* res_char = (char*)malloc(len);
     strncpy(res_char, res.c_str(), len);
     strcat(res_char, "\0");
-
+    cout <<"Final: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    cout<<"\n";
     delete graph;
     //std::cout << "bang!" << std::endl;
 
+    return res_char;
+}
+
+const char* calc_paths(char* json_data, const char* country, const int speed_profile)
+{
+    rapidjson::Document d;
+    LevelID earlyStopLevel = 10;
+
+    std::stringstream filename;
+
+    filename << PROFILEDIR << std::string(country) << "-" << speed_profile << ".sgr"; 
+    
+    const clock_t begin_time = clock();
+
+    MyGraph* graph = loadGraph(filename.str());
+    d.Parse<0>(json_data);
+
+    rapidjson::Document out_doc;
+    out_doc.SetObject();
+
+    rapidjson::Value result;
+    result.SetArray();
+    rapidjson::Document::AllocatorType& allocator = out_doc.GetAllocator();
+    
+    for (rapidjson::SizeType i = 0; i < d.Size(); i++)
+    {
+        MyGraph* graph1 = new MyGraph(*graph);
+        const rapidjson::Value& c = d[i];
+        NodeID source_id = mapNodeID(graph1, (NodeID)c["source"].GetUint());
+        NodeID target_id = mapNodeID(graph1, (NodeID)c["target"].GetUint());
+        DijkstraManyToManyFW _dFW(graph1);
+    
+        EdgeWeight w = _dFW.bidirSearch(source_id, target_id);
+        Path a;
+        _dFW.pathTo(a,target_id,-1,true,true);
+        EdgeID num_edges = a.noOfEdges();
+        delete graph1;
+        rapidjson::Value result_internal;
+        result_internal.SetArray();
+        rapidjson::Value out_doc_internal;
+        out_doc_internal.SetObject();
+        
+        for (EdgeID e = 0; e <= num_edges; e++)
+        {
+          result_internal.PushBack(a.node(e), out_doc.GetAllocator());
+        }
+        
+        rapidjson::Value plen(w);
+        out_doc_internal.AddMember("length", plen, out_doc.GetAllocator());
+        out_doc_internal.AddMember("nodes", result_internal, out_doc.GetAllocator());
+        result.PushBack(out_doc_internal, out_doc.GetAllocator());
+    }     
+    
+    out_doc.AddMember("edges", result, allocator);
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+    out_doc.Accept(writer);
+
+    string res = strbuf.GetString();
+
+    int len = res.length();
+    char* res_char = (char*)malloc(len);
+    strncpy(res_char, res.c_str(), len);
+    strcat(res_char, "\0");
+    delete graph;
+
+    
     return res_char;
 }
 
