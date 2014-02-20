@@ -122,8 +122,8 @@ func main() {
 	web.Get("/points", server.GetNodesToCoordinates)
 
 	// Path
-	web.Get("/path", server.GetPath)
 	web.Get("/cpath", server.GetCoordinatePath)
+	web.Post("/cpaths", server.PostCoordinatePaths)
 
 	// Address
 	web.Post("/resolve", server.PostResolve)

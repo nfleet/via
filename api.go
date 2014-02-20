@@ -265,43 +265,6 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 	return string(cont)
 }
 
-func (server *Server) GetPath(ctx *web.Context) string {
-	p_source, p_source_ok := ctx.Params["source"]
-	p_target, p_target_ok := ctx.Params["target"]
-	p_country, p_country_ok := ctx.Params["country"]
-	p_sp, p_sp_ok := ctx.Params["speed_profile"]
-
-	if !p_source_ok || !p_target_ok || !p_country_ok || !p_sp_ok {
-		ctx.Abort(400, fmt.Sprintf("Missing parameter, need country, speed_profile, source, target; you gave: %q", ctx.Params))
-		return ""
-	}
-
-	if _, ok := server.Config.AllowedCountries[p_country]; !ok {
-		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", p_country))
-		return ""
-	}
-
-	source, _ := strconv.Atoi(p_source)
-	target, _ := strconv.Atoi(p_target)
-	sp, _ := strconv.Atoi(p_sp)
-
-	path, err := CalculatePath(source, target, p_country, sp)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	data, err := json.Marshal(path)
-	if err != nil {
-		ctx.Abort(500, "json error: "+err.Error())
-		return ""
-	}
-
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.ContentType("application/json")
-	return string(data)
-}
-
 func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 	p_source, p_source_ok := ctx.Params["source"]
 	p_target, p_target_ok := ctx.Params["target"]
@@ -342,19 +305,61 @@ func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 	return string(jsonResult)
 }
 
+func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
+	content, err := ioutil.ReadAll(ctx.Request.Body)
+
+	type PathsDto struct {
+		SpeedProfile int `json:'speed_profile'`
+		Edges        []struct {
+			Source Location
+			Target Location
+		}
+	}
+
+	var (
+		paths    PathsDto
+		computed []CoordinatePath
+	)
+
+	if err := json.Unmarshal(content, &paths); err != nil {
+		ctx.Abort(400, "Couldn't parse JSON: "+err.Error()+" in '"+string(content)+"'")
+		return ""
+	} else {
+		// using for loops - guaranteed order preservatio
+		for i := 0; i < len(paths.Edges); i++ {
+			calculatedPath, err := CalculateCoordinatePathFromAddresses(server.Config, paths.Edges[i].Source, paths.Edges[i].Target, paths.SpeedProfile)
+			if err != nil {
+				ctx.Abort(422, "Couldn't resolve addresses: " + err.Error())
+				return ""
+			}
+			computed = append(computed, calculatedPath)
+		}
+	}
+
+	res, err := json.Marshal(computed)
+	if err != nil {
+		ctx.Abort(500, "Couldn't serialize paths: "+err.Error())
+		return ""
+	}
+
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
+	return string(res)
+}
+
 func (server *Server) PostResolve(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 	var locations, resolvedLocations []Location
 
 	// Parse params
 	if err := json.Unmarshal(content, &locations); err != nil {
-		ctx.Abort(400, "Couldn't parse JSON: " + err.Error())
+		ctx.Abort(400, "Couldn't parse JSON: "+err.Error())
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
 			newLoc, err := ResolveLocation(server.Config, locations[i])
 			if err != nil {
-				ctx.Abort(422, "Resolvation failure: " + err.Error())
+				ctx.Abort(422, "Resolvation failure: "+err.Error())
 			}
 			resolvedLocations = append(resolvedLocations, newLoc)
 		}
