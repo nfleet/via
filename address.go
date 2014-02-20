@@ -2,16 +2,16 @@ package main
 
 import (
 	"database/sql"
-	"strings"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type Coordinate struct {
 	Latitude  float64
 	Longitude float64
-	System string
+	System    string
 }
 
 type Location struct {
@@ -20,16 +20,16 @@ type Location struct {
 }
 
 type Address struct {
-	Street     string
-	HouseNumber int
-	City       string
-	Country    string
-	Region     string
-	PostalCode string
-	Confidence float64
+	Street          string
+	HouseNumber     int
+	City            string
+	Country         string
+	Region          string
+	PostalCode      string
+	Confidence      float64
 	ApartmentLetter string
 	ApartmentNumber int
-	AdditionalInfo string
+	AdditionalInfo  string
 }
 
 func GetFuzzyAddress(config Config, address Address, count int) ([]Location, error) {
@@ -42,7 +42,7 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	}
 	defer db.Close()
 
-	q := fmt.Sprintf("SELECT id, coord, city, name, sml from get_appr2('%s') WHERE city LIKE '%%%s%%' ORDER BY sml DESC", address.Street, address.City)
+	q := fmt.Sprintf("SELECT id, coord, city, name, sml from get_appr2('%s') WHERE city LIKE '%%%s%%' ORDER BY sml DESC LIMIT %d", address.Street, address.City, count)
 
 	rows, err := db.Query(q)
 
@@ -55,8 +55,8 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 	for rows.Next() {
 		var (
 			coord, street_name, city string
-			id int
-			conf float64
+			id                       int
+			conf                     float64
 		)
 
 		if err := rows.Scan(&id, &coord, &city, &street_name, &conf); err != nil {
@@ -64,18 +64,18 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 		}
 
 		// parse stupid coordinates
-		var KORDIKYRPÄ [][]float64
+		var coordinateResult [][]float64
 
 		coord = strings.Replace(coord, "(", "[", -1)
 		coord = strings.Replace(coord, ")", "]", -1)
 
-		if err := json.Unmarshal([]byte(coord), &KORDIKYRPÄ); err != nil {
+		if err := json.Unmarshal([]byte(coord), &coordinateResult); err != nil {
 			return []Location{}, err
 		}
 
-		coordinate := KORDIKYRPÄ[0]
+		coordinate :=coordinateResult [0]
 
-		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf*100}, Coordinate{Latitude: coordinate[1], Longitude: coordinate[0], System: "WGS84"}})
+		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf * 100}, Coordinate{Latitude: coordinate[1], Longitude: coordinate[0], System: "WGS84"}})
 	}
 
 	if err := rows.Err(); err != nil {

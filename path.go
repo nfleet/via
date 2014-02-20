@@ -37,7 +37,7 @@ func CalculatePath(source, target int, country string, speed_profile int) (Path,
 	// WHY THE HELL IS THIS NECESSARY?
 	country += "\x00"
 
-	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile) 
+	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile)
 	res = clean_json_cpp_message(res)
 
 	var path Path
@@ -55,7 +55,7 @@ func IsMissingCoordinate(loc Location) bool {
 }
 
 func calculate_distance(config Config, nodes []int, country string) (int, error) {
-	if (len(nodes) < 2) {
+	if len(nodes) < 2 {
 		return 0, nil
 	}
 
@@ -64,8 +64,8 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 
 	var edgePairs []string
 
-	for i := 0; i < len(nodes) - 1; i++ {
-		edgeStart, edgeEnd := nodes[i], nodes[i + 1]
+	for i := 0; i < len(nodes)-1; i++ {
+		edgeStart, edgeEnd := nodes[i], nodes[i+1]
 		s := fmt.Sprintf("(%d,%d)", edgeStart, edgeEnd)
 		edgePairs = append(edgePairs, s)
 	}
@@ -90,6 +90,8 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 }
 
 func CalculateCoordinatePathFromAddresses(config Config, source, target Location, speed_profile int) (CoordinatePath, error) {
+	srcCountry := source.Address.Country
+	trgCountry := target.Address.Country
 	if IsMissingCoordinate(source) {
 		// resolve i
 		var err error
@@ -98,6 +100,7 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 			return CoordinatePath{}, err
 		}
 	}
+
 	if IsMissingCoordinate(target) {
 		// resolve it
 		var err error
@@ -107,34 +110,35 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 		}
 	}
 
+
 	// step 1: coordinate -> node
 	srcLat, srcLong := source.Coordinate.Latitude, source.Coordinate.Longitude
 	trgLat, trgLong := target.Coordinate.Latitude, target.Coordinate.Longitude
 
-	srcNode, err := CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(source.Address.Country))
+	srcNode, err := CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(srcCountry))
 	if err != nil {
 		return CoordinatePath{}, err
 	}
-	trgNode, err := CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(target.Address.Country))
+
+	trgNode, err := CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(trgCountry))
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
 	// step 2: calculate path
-	path, err := CalculatePath(srcNode.Id, trgNode.Id, strings.ToLower(source.Address.Country), speed_profile)
+	path, err := CalculatePath(srcNode.Id, trgNode.Id, strings.ToLower(srcCountry), speed_profile)
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
 	// step 3: get coordinates
-	coordinateList, err := GetCoordinates(config, strings.ToLower(source.Address.Country), path.Nodes)
+	coordinateList, err := GetCoordinates(config, strings.ToLower(srcCountry), path.Nodes)
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
-
 	// step 4: get distance
-	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(source.Address.Country))
+	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(srcCountry))
 	if err != nil {
 		return CoordinatePath{}, err
 	}

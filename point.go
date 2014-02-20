@@ -26,6 +26,7 @@ func CorrectPoint(config Config, point Coord, country string) (CHNode, error) {
 
 	q := fmt.Sprintf("SELECT id, coord[0], coord[1] FROM %s ORDER BY coord <-> point ('%.5f, %.5f') LIMIT 1",
 		table_names[country], point[0], point[1])
+	fmt.Println(q)
 	err = db.QueryRow(q).Scan(&id, &lat, &long)
 
 	switch {
