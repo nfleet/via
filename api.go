@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/hoisie/web"
 	"io/ioutil"
 	"strconv"
+
+	"github.com/hoisie/web"
 )
 
 var allowed_speeds = []int{40, 60, 80, 100, 120}
@@ -308,16 +309,8 @@ func (server *Server) GetCoordinatePath(ctx *web.Context) string {
 func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 
-	type PathsDto struct {
-		SpeedProfile int `json:'speed_profile'`
-		Edges        []struct {
-			Source Location
-			Target Location
-		}
-	}
-
 	var (
-		paths    PathsDto
+		paths    PathsInput
 		computed []CoordinatePath
 	)
 
@@ -325,14 +318,11 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 		ctx.Abort(400, "Couldn't parse JSON: "+err.Error()+" in '"+string(content)+"'")
 		return ""
 	} else {
-		// using for loops - guaranteed order preservatio
-		for i := 0; i < len(paths.Edges); i++ {
-			calculatedPath, err := CalculateCoordinatePathFromAddresses(server.Config, paths.Edges[i].Source, paths.Edges[i].Target, paths.SpeedProfile)
-			if err != nil {
-				ctx.Abort(422, "Couldn't resolve addresses: " + err.Error())
-				return ""
-			}
-			computed = append(computed, calculatedPath)
+		var err error
+		computed, err = CalculateCoordinatePaths(server.Config, paths)
+		if err != nil {
+			ctx.Abort(422, "Couldn't resolve addresses: "+err.Error())
+			return ""
 		}
 	}
 

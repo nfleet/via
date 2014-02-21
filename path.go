@@ -5,13 +5,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/nfleet/via/dmatrix"
 	"strings"
+
+	"github.com/nfleet/via/dmatrix"
 )
 
 type Path struct {
 	Length int   `json:"length"`
 	Nodes  []int `json:"nodes"`
+}
+
+type Edge struct {
+	Source Location
+	Target Location
+}
+
+type NodeEdge struct {
+	Source int `json:"source"`
+	Target int `json:"target"`
+}
+
+type PathsInput struct {
+	SpeedProfile int
+	Edges        []Edge
 }
 
 type CoordinatePath struct {
@@ -89,9 +105,27 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 
 }
 
+func correct_coordinates(config Config, source, target Location) (CHNode, CHNode, error) {
+	// step 1: coordinate -> node
+	srcLat, srcLong := source.Coordinate.Latitude, source.Coordinate.Longitude
+	trgLat, trgLong := target.Coordinate.Latitude, target.Coordinate.Longitude
+
+	country := source.Address.Country
+
+	srcNode, err := CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(country))
+	if err != nil {
+		return CHNode{}, CHNode{}, err
+	}
+
+	trgNode, err := CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(country))
+	if err != nil {
+		return CHNode{}, CHNode{}, err
+	}
+
+	return srcNode, trgNode, nil
+}
+
 func CalculateCoordinatePathFromAddresses(config Config, source, target Location, speed_profile int) (CoordinatePath, error) {
-	srcCountry := source.Address.Country
-	trgCountry := target.Address.Country
 	if IsMissingCoordinate(source) {
 		// resolve i
 		var err error
@@ -110,38 +144,127 @@ func CalculateCoordinatePathFromAddresses(config Config, source, target Location
 		}
 	}
 
-
-	// step 1: coordinate -> node
-	srcLat, srcLong := source.Coordinate.Latitude, source.Coordinate.Longitude
-	trgLat, trgLong := target.Coordinate.Latitude, target.Coordinate.Longitude
-
-	srcNode, err := CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(srcCountry))
-	if err != nil {
-		return CoordinatePath{}, err
+	if source.Address.Country != target.Address.Country {
+		return CoordinatePath{}, errors.New("The source country and target country must be equal!")
 	}
 
-	trgNode, err := CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(trgCountry))
+	country := source.Address.Country
+
+	srcNode, trgNode, err := correct_coordinates(config, source, target)
 	if err != nil {
-		return CoordinatePath{}, err
+		return CoordinatePath{}, errors.New("Coordinate correction failed: " + err.Error())
 	}
 
 	// step 2: calculate path
-	path, err := CalculatePath(srcNode.Id, trgNode.Id, strings.ToLower(srcCountry), speed_profile)
+	path, err := CalculatePath(srcNode.Id, trgNode.Id, strings.ToLower(country), speed_profile)
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
 	// step 3: get coordinates
-	coordinateList, err := GetCoordinates(config, strings.ToLower(srcCountry), path.Nodes)
+	coordinateList, err := GetCoordinates(config, strings.ToLower(country), path.Nodes)
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
 	// step 4: get distance
-	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(srcCountry))
+	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(country))
 	if err != nil {
 		return CoordinatePath{}, err
 	}
 
 	return CoordinatePath{Distance: distance, Time: path.Length, Coords: coordinateList}, nil
+}
+
+func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]Path, error) {
+	input_data, err := json.Marshal(nodeEdges)
+	if err != nil {
+		return []Path{}, err
+	}
+
+	country = strings.ToLower(country)
+
+	// WHY THE HELL IS THIS NECESSARY?
+	country += "\x00"
+
+	res := dmatrix.Calc_paths(string(input_data), string(country), speed_profile)
+	res = clean_json_cpp_message(res)
+
+	if !strings.HasSuffix(res, "]}]}") {
+		res += "]}"
+	}
+
+	var edges struct {
+		Edges []Path `json:"edges"`
+	}
+
+	if err := json.Unmarshal([]byte(res), &edges); err != nil {
+		return []Path{}, err
+	}
+
+	return edges.Edges, nil
+}
+
+func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath, error) {
+	var edges []NodeEdge
+
+	for _, edge := range input.Edges {
+		var source, target Location
+
+		if IsMissingCoordinate(edge.Source) {
+			var err error
+			source, err = ResolveLocation(config, edge.Source)
+			source.Address.Country = edge.Source.Address.Country
+			if err != nil {
+				return []CoordinatePath{}, err
+			}
+		} else {
+			source = edge.Source
+		}
+
+		if IsMissingCoordinate(edge.Target) {
+			var err error
+			target, err = ResolveLocation(config, edge.Target)
+			target.Address.Country = edge.Target.Address.Country
+			if err != nil {
+				return []CoordinatePath{}, err
+			}
+		} else {
+			target = edge.Target
+		}
+
+		srcNode, trgNode, err := correct_coordinates(config, source, target)
+		if err != nil {
+			return []CoordinatePath{}, err
+		}
+
+		edges = append(edges, NodeEdge{srcNode.Id, trgNode.Id})
+	}
+
+	country := strings.ToLower(input.Edges[0].Source.Address.Country)
+
+	nodePaths, err := CalculatePaths(edges, country, input.SpeedProfile)
+	if err != nil {
+		return []CoordinatePath{}, err
+	}
+
+	var paths []CoordinatePath
+
+	for _, nodePath := range nodePaths {
+		// step 3: get coordinates
+		coordinateList, err := GetCoordinates(config, country, nodePath.Nodes)
+		if err != nil {
+			return []CoordinatePath{}, err
+		}
+
+		// step 4: get distance
+		distance, err := calculate_distance(config, nodePath.Nodes, country)
+		if err != nil {
+			return []CoordinatePath{}, err
+		}
+
+		paths = append(paths, CoordinatePath{Distance: distance, Time: nodePath.Length, Coords: coordinateList})
+	}
+
+	return paths, nil
 }
