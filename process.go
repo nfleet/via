@@ -32,11 +32,11 @@ func dump_matrix_to_json(nodes []int) ([]byte, error) {
 
 func clean_json_cpp_message(msg string) string {
 	res := msg
-	if strings.Index(res, "}") == -1 {
+	if strings.LastIndex(res, "}") == -1 {
 		res = res + "}"
 		debug.Println("brace missing")
-	} else if strings.Index(res, "}") != len(res)-1 {
-		braceIndex := strings.Index(res, "}")
+	} else if strings.LastIndex(res, "}") != len(res)-1 {
+		braceIndex := strings.LastIndex(res, "}")
 		junk := res[braceIndex+1:]
 		res = res[:braceIndex+1]
 		debug.Printf("Stripped extra data: %s", junk)
