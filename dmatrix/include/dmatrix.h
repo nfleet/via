@@ -242,9 +242,9 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     filename << PROFILEDIR << std::string(country) << "-" << speed_profile << ".sgr"; 
     
     const clock_t begin_time = clock();
-    cout<<"Start "<<endl;
+    //cout<<"Start "<<endl;
     MyGraph* graph = loadGraph(filename.str());
-    cout <<"Deserialization: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    //cout <<"Deserialization: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
     cout<<"\n";
 
     d.Parse<0>(json_data);
@@ -287,8 +287,8 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     char* res_char = (char*)malloc(len);
     strncpy(res_char, res.c_str(), len);
     strcat(res_char, "\0");
-    cout <<"Final: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
-    cout<<"\n";
+    //cout <<"Final: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
+    //cout<<"\n";
     delete graph;
     //std::cout << "bang!" << std::endl;
 
