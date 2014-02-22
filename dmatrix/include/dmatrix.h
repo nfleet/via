@@ -245,7 +245,7 @@ const char* calc_path(char* json_data, const char* country, const int speed_prof
     //cout<<"Start "<<endl;
     MyGraph* graph = loadGraph(filename.str());
     //cout <<"Deserialization: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC;
-    cout<<"\n";
+    //cout<<"\n";
 
     d.Parse<0>(json_data);
     

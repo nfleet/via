@@ -187,7 +187,7 @@ func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]
 	// WHY THE HELL IS THIS NECESSARY?
 	country += "\x00"
 
-	res := dmatrix.Calc_paths(string(input_data), string(country), speed_profile)
+	res := dmatrix.Calc_paths_eff(string(input_data), string(country), speed_profile)
 	res = clean_json_cpp_message(res)
 
 	if !strings.HasSuffix(res, "]}]}") {
