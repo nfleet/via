@@ -362,3 +362,71 @@ const char* calc_paths(char* json_data, const char* country, const int speed_pro
     return res_char;
 }
 
+const char* calc_paths_eff(char* json_data, const char* country, const int speed_profile)
+{
+    rapidjson::Document d;
+    LevelID earlyStopLevel = 10;
+
+    std::stringstream filename;
+
+    filename << PROFILEDIR << std::string(country) << "-" << speed_profile << ".sgr"; 
+    
+    const clock_t begin_time = clock();
+
+    MyGraph* graph = loadGraph(filename.str());
+    d.Parse<0>(json_data);
+    //cout <<"Load and parse: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC <<endl;
+    rapidjson::Document out_doc;
+    out_doc.SetObject();
+
+    rapidjson::Value result;
+    result.SetArray();
+    rapidjson::Document::AllocatorType& allocator = out_doc.GetAllocator();
+    DijkstraManyToManyFW _dFW(graph);
+    for (rapidjson::SizeType i = 0; i < d.Size(); i++)
+    {
+        //cout <<"loop begins: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC <<endl;
+        
+        const rapidjson::Value& c = d[i];
+        NodeID source_id = mapNodeID(graph, (NodeID)c["source"].GetUint());
+        NodeID target_id = mapNodeID(graph, (NodeID)c["target"].GetUint());
+        
+        _dFW.clear();
+        EdgeWeight w = _dFW.bidirSearch(source_id, target_id);
+        Path a;
+        _dFW.pathTo(a,target_id,-1,true,true);
+        EdgeID num_edges = a.noOfEdges();
+
+        rapidjson::Value result_internal;
+        result_internal.SetArray();
+        rapidjson::Value out_doc_internal;
+        out_doc_internal.SetObject();
+        
+        for (EdgeID e = 0; e <= num_edges; e++)
+        {
+          result_internal.PushBack(a.node(e), out_doc.GetAllocator());
+        }
+        
+        rapidjson::Value plen(w);
+        out_doc_internal.AddMember("length", plen, out_doc.GetAllocator());
+        out_doc_internal.AddMember("nodes", result_internal, out_doc.GetAllocator());
+        result.PushBack(out_doc_internal, out_doc.GetAllocator());
+        //cout <<"loop end: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC <<"Number: "<<num_edges<<endl;
+    }     
+    
+    out_doc.AddMember("edges", result, allocator);
+    rapidjson::StringBuffer strbuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+    out_doc.Accept(writer);
+
+    string res = strbuf.GetString();
+
+    int len = res.length();
+    char* res_char = (char*)malloc(len);
+    strncpy(res_char, res.c_str(), len);
+    strcat(res_char, "\0");
+    delete graph;
+
+    
+    return res_char;
+}
