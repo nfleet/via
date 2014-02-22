@@ -73,7 +73,7 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 			return []Location{}, err
 		}
 
-		coordinate :=coordinateResult [0]
+		coordinate := coordinateResult[0]
 
 		locations = append(locations, Location{Address{Street: street_name, City: city, Confidence: conf * 100}, Coordinate{Latitude: coordinate[1], Longitude: coordinate[0], System: "WGS84"}})
 	}

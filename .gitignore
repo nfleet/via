@@ -1,5 +1,6 @@
 .svn
 *.so
 via
+./via
 production*
 a.out
