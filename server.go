@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/hoisie/redis"
-	"github.com/hoisie/web"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/hoisie/redis"
+	"github.com/hoisie/web"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/bmizerany/pq"
@@ -108,24 +109,19 @@ func main() {
 
 	server := Server{client: redis, Config: config}
 
-	// Routes.
+	// Basic
 	web.Get("/", server.Splash)
 	web.Get("/status", server.GetServerStatus)
 
-	// Dmatrix status
-	web.Get("/spp/(.*)/result", server.GetMatrixResult)
-	web.Get("/spp/(.*)$", server.GetMatrix)
-	web.Post("/spp/", server.PostMatrix)
-
-	// Point
-	web.Get("/point", server.GetCorrectCoordinate)
-	web.Get("/points", server.GetNodesToCoordinates)
+	// Dmatrix
+	web.Get("/dm/(.*)/result", server.GetMatrixResult)
+	web.Get("/dm/(.*)$", server.GetMatrix)
+	web.Post("/dm/", server.PostMatrix)
 
 	// Path
-	web.Get("/cpath", server.GetCoordinatePath)
-	web.Post("/cpaths", server.PostCoordinatePaths)
+	web.Post("/paths", server.PostCoordinatePaths)
 
-	// Address
+	// Address/Coordinate
 	web.Post("/resolve", server.PostResolve)
 
 	web.Match("OPTIONS", "/(.*)", Options)

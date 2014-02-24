@@ -266,46 +266,6 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 	return string(cont)
 }
 
-func (server *Server) GetCoordinatePath(ctx *web.Context) string {
-	p_source, p_source_ok := ctx.Params["source"]
-	p_target, p_target_ok := ctx.Params["target"]
-	p_sp, p_sp_ok := ctx.Params["speed_profile"]
-
-	if !p_source_ok || !p_target_ok || !p_sp_ok {
-		ctx.Abort(400, fmt.Sprintf("Missing parameter, need speed_profile, source, target; you gave: %q", ctx.Params))
-		return ""
-	}
-
-	var sourceAddr, targetAddr Location
-	if err := json.Unmarshal([]byte(p_source), &sourceAddr); err != nil {
-		ctx.Abort(400, err.Error())
-		return ""
-	}
-
-	if err := json.Unmarshal([]byte(p_target), &targetAddr); err != nil {
-		ctx.Abort(400, err.Error())
-		return ""
-	}
-
-	sp, _ := strconv.Atoi(p_sp)
-
-	result, err := CalculateCoordinatePathFromAddresses(server.Config, sourceAddr, targetAddr, sp)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	jsonResult, err := json.Marshal(result)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.ContentType("application/json")
-	return string(jsonResult)
-}
-
 func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 
