@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nfleet/via/dmatrix"
+	"github.com/nfleet/via/ch"
 )
 
 type Path struct {
@@ -34,33 +34,6 @@ type CoordinatePath struct {
 	Distance int     `json:"distance"`
 	Time     int     `json:"time"`
 	Coords   []Coord `json:"coords"`
-}
-
-func CalculatePath(source, target int, country string, speed_profile int) (Path, error) {
-	var input = struct {
-		Source int `json:"source"`
-		Target int `json:"target"`
-	}{
-		source,
-		target,
-	}
-
-	input_data, err := json.Marshal(input)
-	if err != nil {
-		return Path{}, err
-	}
-
-	// WHY THE HELL IS THIS NECESSARY?
-	country += "\x00"
-
-	res := dmatrix.Calc_path(string(input_data), string(country), speed_profile)
-	res = clean_json_cpp_message(res)
-
-	var path Path
-	if err := json.Unmarshal([]byte(res), &path); err != nil {
-		return Path{}, err
-	}
-	return path, nil
 }
 
 func IsMissingCoordinate(loc Location) bool {
@@ -125,57 +98,6 @@ func correct_coordinates(config Config, source, target Location) (CHNode, CHNode
 	return srcNode, trgNode, nil
 }
 
-func CalculateCoordinatePathFromAddresses(config Config, source, target Location, speed_profile int) (CoordinatePath, error) {
-	if IsMissingCoordinate(source) {
-		// resolve i
-		var err error
-		source, err = ResolveLocation(config, source)
-		if err != nil {
-			return CoordinatePath{}, err
-		}
-	}
-
-	if IsMissingCoordinate(target) {
-		// resolve it
-		var err error
-		target, err = ResolveLocation(config, target)
-		if err != nil {
-			return CoordinatePath{}, err
-		}
-	}
-
-	if source.Address.Country != target.Address.Country {
-		return CoordinatePath{}, errors.New("The source country and target country must be equal!")
-	}
-
-	country := source.Address.Country
-
-	srcNode, trgNode, err := correct_coordinates(config, source, target)
-	if err != nil {
-		return CoordinatePath{}, errors.New("Coordinate correction failed: " + err.Error())
-	}
-
-	// step 2: calculate path
-	path, err := CalculatePath(srcNode.Id, trgNode.Id, strings.ToLower(country), speed_profile)
-	if err != nil {
-		return CoordinatePath{}, err
-	}
-
-	// step 3: get coordinates
-	coordinateList, err := GetCoordinates(config, strings.ToLower(country), path.Nodes)
-	if err != nil {
-		return CoordinatePath{}, err
-	}
-
-	// step 4: get distance
-	distance, err := calculate_distance(config, path.Nodes, strings.ToLower(country))
-	if err != nil {
-		return CoordinatePath{}, err
-	}
-
-	return CoordinatePath{Distance: distance, Time: path.Length, Coords: coordinateList}, nil
-}
-
 func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]Path, error) {
 	input_data, err := json.Marshal(nodeEdges)
 	if err != nil {
@@ -187,7 +109,7 @@ func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]
 	// WHY THE HELL IS THIS NECESSARY?
 	country += "\x00"
 
-	res := dmatrix.Calc_paths_eff(string(input_data), string(country), speed_profile)
+	res := ch.Calc_paths(string(input_data), string(country), speed_profile)
 	res = clean_json_cpp_message(res)
 
 	if !strings.HasSuffix(res, "]}]}") {

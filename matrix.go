@@ -8,9 +8,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/nfleet/via/dmatrix"
 	"strings"
 	"time"
+
+	"github.com/nfleet/via/ch"
 )
 
 func CreateMatrixHash(matrixData, country string, speed_profile int) string {
@@ -132,7 +133,7 @@ func (server *Server) ComputeMatrix(matrixHash string) {
 
 	// todo: use nodes
 	var res string
-	res = dmatrix.Calc(string(json_data), string(country), int(speed_profile))
+	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile))
 	// something weird might happen with rapidjson serialization - fix this
 	// case 1: missing }
 	if strings.Index(res, "}") == -1 {
