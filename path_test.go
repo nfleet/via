@@ -49,12 +49,6 @@ func BenchmarkGermanyPathsExtraction(b *testing.B) {
 	}
 }
 
-func TestCalculateCoordinatePathWithCoordinates(t *testing.T) {
-	if _, err := CalculateCoordinatePathFromAddresses(server.Config, srcCoord, trgCoord, 100); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestCalculatePathsWithoutCoordinates(t *testing.T) {
 	_, err := CalculateCoordinatePaths(server.Config, PathsInput{100, noCoordsFinland})
 
@@ -96,7 +90,7 @@ func api_coordinate_query(t *testing.T, edges []Edge, speed_profile int) []Coord
 
 	var paths []CoordinatePath
 
-	request := fmt.Sprintf("http://localhost:%d/cpaths", server.Config.Port)
+	request := fmt.Sprintf("http://localhost:%d/paths", server.Config.Port)
 	response, err := http.Post(request, "application/json", b)
 	if err != nil {
 		t.Fatal(response)
