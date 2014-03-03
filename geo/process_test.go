@@ -8,7 +8,7 @@ import (
 func TestParsing(t *testing.T) {
 	dummy := Matrix{Nodes: []int{1, 2, 3, 4, 5}}
 
-	blob, err := dump_matrix_to_json(dummy.Nodes)
+	blob, err := MatrixToJson(dummy.Nodes)
 	if err != nil {
 		t.Error("json marshal failed: " + err.Error())
 	}

@@ -3,6 +3,8 @@ package geo
 import (
 	"encoding/json"
 	"io/ioutil"
+
+	_ "github.com/bmizerany/pq"
 )
 
 func LoadConfig(file string) (Config, error) {
@@ -20,7 +22,7 @@ func LoadConfig(file string) (Config, error) {
 
 func NewGeo(debug bool, dbUser, dbName string, port int, allowedCountries map[string]bool) *Geo {
 	g := new(Geo)
-	g.Debug = debug
+	g.Debug = debugging(debug)
 	g.Config.AllowedCountries = allowedCountries
 	g.Config.DbName = dbName
 	g.Config.DbUser = dbUser

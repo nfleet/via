@@ -26,7 +26,7 @@ func MatrixToJson(nodes []int) ([]byte, error) {
 	return cont, nil
 }
 
-func CleanCppMessage(msg string) string {
+func (g *Geo) CleanCppMessage(msg string) string {
 	res := msg
 	if strings.LastIndex(res, "}") == -1 {
 		res = res + "}"

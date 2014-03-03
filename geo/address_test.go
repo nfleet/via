@@ -7,7 +7,7 @@ func TestResolvationForAddress(t *testing.T) {
 		Address: Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"},
 	}
 
-	loc, err := test_geo.ResolveLocation(test_geo.Config, location)
+	loc, err := test_geo.ResolveLocation(location)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func TestResolvationCoordinateFixing(t *testing.T) {
 		Coordinate: Coordinate{Latitude: 62.24, Longitude: 25.74},
 	}
 
-	loc, err := test_geo.ResolveLocation(test_geo.Config, location)
+	loc, err := test_geo.ResolveLocation(location)
 	if err != nil {
 		t.Fatal(err)
 	}

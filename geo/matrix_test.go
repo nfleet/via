@@ -14,12 +14,12 @@ var testPayload = struct {
 }
 
 func erase_computation(hash string, t *testing.T) {
-	ok, err := test_via.client.Del(hash)
+	ok, err := test_geo.Client.Del(hash)
 	if err != nil {
 		t.Fatalf("deleting %s failed: %s", hash, err.Error())
 	}
 
-	if ok, _ = test_via.client.Exists(hash); ok {
+	if ok, _ = test_geo.Client.Exists(hash); ok {
 		t.Fatalf("%s should be deleted", hash)
 	}
 }
@@ -41,7 +41,7 @@ func TestMatrixHashUniqueness(t *testing.T) {
 }
 
 func TestMatrixComputationCreation(t *testing.T) {
-	hash, res := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, res := test_geo.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	if res != false {
@@ -51,11 +51,11 @@ func TestMatrixComputationCreation(t *testing.T) {
 
 func TestMatrixProxyCreation(t *testing.T) {
 	// res ignored, tested by above method.
-	hash, _ := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, _ := test_geo.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	// create again
-	hash2, res2 := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash2, res2 := test_geo.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash2, t)
 
 	if hash == hash2 {
@@ -66,8 +66,8 @@ func TestMatrixProxyCreation(t *testing.T) {
 		t.Error("Proxy creation didn't succeed.")
 	}
 
-	ttl, _ := client.Ttl(hash)
-	ttl2, _ := client.Ttl(hash2)
+	ttl, _ := test_geo.Client.Ttl(hash)
+	ttl2, _ := test_geo.Client.Ttl(hash2)
 
 	if ttl != ttl2 {
 		t.Errorf("TTL different: %q != %q, TTL times should be equal for proxy resources.", ttl, ttl2)

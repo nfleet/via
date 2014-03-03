@@ -59,12 +59,12 @@ func (g *Geo) CorrectCoordinates(source, target Location) (CHNode, CHNode, error
 
 	country := source.Address.Country
 
-	srcNode, err := g.CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(country))
+	srcNode, err := g.CorrectPoint(Coord{srcLat, srcLong}, strings.ToLower(country))
 	if err != nil {
 		return CHNode{}, CHNode{}, err
 	}
 
-	trgNode, err := g.CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(country))
+	trgNode, err := g.CorrectPoint(Coord{trgLat, trgLong}, strings.ToLower(country))
 	if err != nil {
 		return CHNode{}, CHNode{}, err
 	}
@@ -84,7 +84,7 @@ func (g *Geo) CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile
 	country += "\x00"
 
 	res := ch.Calc_paths(string(input_data), string(country), speed_profile)
-	res = clean_json_cpp_message(res)
+	res = g.CleanCppMessage(res)
 
 	if !strings.HasSuffix(res, "]}]}") {
 		res += "]}"
@@ -101,7 +101,7 @@ func (g *Geo) CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile
 	return edges.Edges, nil
 }
 
-func (g *Geo) CalculateCoordinatePaths(ig Config, input PathsInput) ([]CoordinatePath, error) {
+func (g *Geo) CalculateCoordinatePaths(input PathsInput) ([]CoordinatePath, error) {
 	var edges []NodeEdge
 
 	for _, edge := range input.Edges {
@@ -129,7 +129,7 @@ func (g *Geo) CalculateCoordinatePaths(ig Config, input PathsInput) ([]Coordinat
 			target = edge.Target
 		}
 
-		srcNode, trgNode, err := g.CorrectCoordinates(config, source, target)
+		srcNode, trgNode, err := g.CorrectCoordinates(source, target)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
@@ -148,13 +148,13 @@ func (g *Geo) CalculateCoordinatePaths(ig Config, input PathsInput) ([]Coordinat
 
 	for _, nodePath := range nodePaths {
 		// step 3: get coordinates
-		coordinateList, err := g.GetCoordinates(config, country, nodePath.Nodes)
+		coordinateList, err := g.GetCoordinates(country, nodePath.Nodes)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
 
 		// step 4: get distance
-		distance, err := g.CalculateDistance(config, nodePath.Nodes, country)
+		distance, err := g.CalculateDistance(nodePath.Nodes, country)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
