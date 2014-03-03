@@ -1,13 +1,6 @@
 package geo
 
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"testing"
-)
+import "testing"
 
 var (
 	srcCoord = Location{Coordinate: Coordinate{Latitude: 62.24027, Longitude: 25.74444}, Address: Address{Country: "Finland"}}
@@ -33,7 +26,7 @@ var (
 
 func BenchmarkFinlandPathsExtraction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := CalculateCoordinatePaths(server.Config, PathsInput{100, noCoordsFinland})
+		_, err := test_geo.CalculateCoordinatePaths(PathsInput{100, noCoordsFinland})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -42,7 +35,7 @@ func BenchmarkFinlandPathsExtraction(b *testing.B) {
 
 func BenchmarkGermanyPathsExtraction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := CalculateCoordinatePaths(server.Config, PathsInput{100, coordsGermany})
+		_, err := test_geo.CalculateCoordinatePaths(PathsInput{100, coordsGermany})
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -50,7 +43,7 @@ func BenchmarkGermanyPathsExtraction(b *testing.B) {
 }
 
 func TestCalculatePathsWithoutCoordinates(t *testing.T) {
-	_, err := CalculateCoordinatePaths(server.Config, PathsInput{100, noCoordsFinland})
+	_, err := test_geo.CalculateCoordinatePaths(PathsInput{100, noCoordsFinland})
 
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +51,7 @@ func TestCalculatePathsWithoutCoordinates(t *testing.T) {
 
 	t.Logf("Finland (%d edges) ok.", len(noCoordsFinland))
 
-	_, err = CalculateCoordinatePaths(server.Config, PathsInput{100, coordsGermany})
+	_, err = test_geo.CalculateCoordinatePaths(PathsInput{100, coordsGermany})
 
 	if err != nil {
 		t.Fatal(err)
@@ -69,63 +62,9 @@ func TestCalculatePathsWithoutCoordinates(t *testing.T) {
 
 func BenchmarkFinlandCoordinatelessPathExtraction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := CalculateCoordinatePaths(server.Config, PathsInput{100, noCoordsFinland})
+		_, err := test_geo.CalculateCoordinatePaths(PathsInput{100, noCoordsFinland})
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
-}
-
-func api_coordinate_query(t *testing.T, edges []Edge, speed_profile int) []CoordinatePath {
-	payload := struct {
-		SpeedProfile int
-		Edges        []Edge
-	}{
-		speed_profile,
-		edges,
-	}
-
-	jsonPayload, err := json.Marshal(payload)
-	b := strings.NewReader(string(jsonPayload))
-
-	var paths []CoordinatePath
-
-	request := fmt.Sprintf("http://localhost:%d/paths", server.Config.Port)
-	response, err := http.Post(request, "application/json", b)
-	if err != nil {
-		t.Fatal(response)
-	} else if response.StatusCode != 200 {
-		cont, _ := ioutil.ReadAll(response.Body)
-		t.Fatal(string(cont))
-	} else {
-		defer response.Body.Close()
-		cont, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err := json.Unmarshal(cont, &paths); err != nil {
-			t.Logf(err.Error())
-		}
-
-		t.Logf("sent %d paths <=> got %d back", len(edges), len(paths))
-
-		for i, p := range paths {
-			t.Logf("Calculated path of %d m / %d secs from %s, %s, %s to %s, %s, %s", p.Distance, p.Time,
-				edges[i].Source.Address.Street, edges[i].Source.Address.City, edges[i].Source.Address.Country,
-				edges[i].Target.Address.Street, edges[i].Target.Address.City, edges[i].Target.Address.Country)
-		}
-
-		t.Logf("Calculated %d paths", len(paths))
-	}
-
-	return paths
-}
-
-func TestAPICalculateCoordinatePathWithExplicitCoordinates(t *testing.T) {
-	api_coordinate_query(t, []Edge{{srcCoord, trgCoord}}, 100)
-}
-
-func TestAPICalculateCoordinatePathWithoutCoordinates(t *testing.T) {
-	api_coordinate_query(t, noCoordsFinland, 100)
 }

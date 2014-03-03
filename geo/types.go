@@ -73,7 +73,8 @@ type Matrix struct {
 
 type Geo struct {
 	Debug  debugging
-	client redis.Client
+	Expiry int
+	Client redis.Client
 	Config
 }
 

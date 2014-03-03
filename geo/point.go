@@ -13,7 +13,7 @@ type CHNode struct {
 }
 
 func (g *Geo) CorrectPoint(point Coord, country string) (CHNode, error) {
-	db, _ := sql.Open("postgres", g.Config.String())
+	db, err := sql.Open("postgres", g.Config.String())
 	if err != nil {
 		return CHNode{}, err
 	}
@@ -40,9 +40,9 @@ func (g *Geo) CorrectPoint(point Coord, country string) (CHNode, error) {
 }
 
 func (g *Geo) GetCoordinates(country string, nodes []int) ([]Coord, error) {
-	db, _ := sql.Open("postgres", g.Config.String())
+	db, err := sql.Open("postgres", g.Config.String())
 	if err != nil {
-		return CHNode{}, err
+		return []Coord{}, err
 	}
 	defer db.Close()
 

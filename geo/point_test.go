@@ -14,12 +14,12 @@ var (
 
 func BenchmarkPointCorrection(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		CorrectPoint(server.Config, Coord{62.24, 25.74}, "finland")
+		test_geo.CorrectPoint(Coord{62.24, 25.74}, "finland")
 	}
 }
 
 func get_country_coords(nodes []int, country string) error {
-	_, err := GetCoordinates(server.Config, country, nodes)
+	_, err := test_geo.GetCoordinates(country, nodes)
 	return err
 }
 
@@ -38,7 +38,7 @@ func BenchmarkGermanyPointToCoordinateTranslation(b *testing.B) {
 func BenchmarkAPIPointCorrection(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		query_string := fmt.Sprintf("lat=%f&long=%f&country=%s", 62.24, 25.74, "finland")
-		request := fmt.Sprintf("http://localhost:%d/point?%s", server.Config.Port, query_string)
+		request := fmt.Sprintf("http://localhost:%d/point?%s", test_geo.Config.Port, query_string)
 		if _, err := http.Get(request); err != nil {
 			b.Fatal(err)
 		}
@@ -49,7 +49,7 @@ func BenchmarkAPIFinlandPointsToCoordinates(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		values := strings.Replace(fmt.Sprintf("%v", FinlandNodes), " ", ",", -1)
 		query_string := fmt.Sprintf("nodes=%s&country=%s", values, "finland")
-		request := fmt.Sprintf("http://localhost:%d/points?%s", server.Config.Port, query_string)
+		request := fmt.Sprintf("http://localhost:%d/points?%s", test_geo.Config.Port, query_string)
 		if res, err := http.Get(request); err != nil || res.StatusCode != 200 {
 			b.Fatal(err)
 		}
@@ -60,7 +60,7 @@ func BenchmarkAPIGermanyPointsToCoordinates(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		values := strings.Replace(fmt.Sprintf("%v", GermanyNodes), " ", ",", -1)
 		query_string := fmt.Sprintf("nodes=%s&country=%s", values, "germany")
-		request := fmt.Sprintf("http://localhost:%d/points?%s", server.Config.Port, query_string)
+		request := fmt.Sprintf("http://localhost:%d/points?%s", test_geo.Config.Port, query_string)
 		if res, err := http.Get(request); err != nil || res.StatusCode != 200 {
 			b.Fatal(err)
 		}

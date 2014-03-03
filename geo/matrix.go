@@ -28,7 +28,7 @@ func CreateMatrixHash(matrixData, country string, speed_profile int) string {
 // Returns the hash to be used with Redis and true whether a proxy resource was created,
 // false if the resource is new.
 func (g *Geo) CreateMatrixComputation(matrix []Coord, country string, speed_profile int) (string, bool) {
-	c := g.client
+	c := g.Client
 	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
 	// check if computation exists
 	if exists, _ := c.Exists(matrixHash); exists {
@@ -58,14 +58,14 @@ func (g *Geo) CreateMatrixComputation(matrix []Coord, country string, speed_prof
 
 	c.Hset(matrixHash, "data", buf.Bytes())
 	c.Expire(matrixHash, 3600)
-	g.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, expiry)
+	g.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, g.Expiry)
 
 	return matrixHash, false
 }
 
 // Returns computation progress for the matrix identified by matrixHash.
 func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
-	c := g.client
+	c := g.Client
 	workingHash := matrixHash
 	if exists, _ := c.Exists(workingHash); !exists {
 		return "", errors.New("no matrix found for hash " + workingHash)
@@ -82,7 +82,7 @@ func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
 // Computes a matrix hash. This should be launched in a goroutine, not in the main thread.
 func (g *Geo) ComputeMatrix(matrixHash string) {
 	var coords []Coord
-	rc := g.client
+	rc := g.Client
 	t0 := time.Now()
 
 	set_status := func(status string) {
@@ -122,7 +122,7 @@ func (g *Geo) ComputeMatrix(matrixHash string) {
 	}
 
 	set_status("computing")
-	json_data, err := dump_matrix_to_json(nodes)
+	json_data, err := MatrixToJson(nodes)
 	if err != nil {
 		panic("nodes to json error:" + err.Error())
 	}
