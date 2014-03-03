@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/hoisie/redis"
 	"github.com/hoisie/web"
+	"github.com/nfleet/via/geo"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/bmizerany/pq"
@@ -14,10 +14,8 @@ import (
 
 type (
 	Server struct {
-		Config
+		Geo *geo.Geo
 	}
-
-	debugging bool
 )
 
 const (
@@ -27,10 +25,9 @@ const (
 var (
 	Debug    bool
 	Parallel bool
-	debug    debugging
 )
 
-func (s *Server) Splash(ctx *web.Context) {
+func Splash(ctx *web.Context) {
 	ctx.ContentType("image/jpeg")
 	http.ServeFile(ctx, ctx.Request, "./splash.jpg")
 }
@@ -58,11 +55,8 @@ func Options(ctx *web.Context, route string) string {
 func main() {
 	parse_flags()
 
-	var config Config
+	var config geo.Config
 	var configFile string
-	var redis redis.Client
-
-	debug = debugging(Debug)
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -71,17 +65,19 @@ func main() {
 		configFile = args[0]
 	}
 
-	debug.Println("loading config from " + configFile)
-	config, err := load_config(configFile)
+	fmt.Println("loading config from " + configFile)
+	config, err := geo.LoadConfig(configFile)
 	if err != nil {
 		fmt.Printf("configuration loading from %s failed: %s\n", configFile, err.Error())
 		return
 	}
 
-	server := Server{client: redis, Config: config}
+	geo := geo.NewGeo(Debug, config.DbUser, config.DbName, config.Port, config.AllowedCountries)
+
+	server := Server{geo}
 
 	// Basic
-	web.Get("/", server.Splash)
+	web.Get("/", Splash)
 	web.Get("/status", server.GetServerStatus)
 
 	// Dmatrix

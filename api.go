@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
@@ -24,7 +23,7 @@ func contains(a int, list []int) bool {
 	return false
 }
 
-func check_coordinate_sanity(matrix []Coord, country string) (bool, error) {
+func check_coordinate_sanity(matrix []geo.Coord, country string) (bool, error) {
 	bbox := geo.BoundingBoxes[country]
 
 	verify := func(pair []float64) bool {
@@ -58,7 +57,7 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 	var buf bytes.Buffer
 	buf.ReadFrom(body)
 	bodyParams := buf.Bytes()
-	debug.Println(buf.String())
+	server.Geo.Debug.Println(buf.String())
 	var paramBlob map[string]interface{}
 	// Parse params
 	json.Unmarshal(bodyParams, &paramBlob)
@@ -82,9 +81,9 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			return
 		}
 		// Sanitize country.
-		if _, ok := server.AllowedCountries[country]; !ok {
+		if _, ok := server.Geo.Config.AllowedCountries[country]; !ok {
 			countries := ""
-			for k := range server.AllowedCountries {
+			for k := range server.Geo.Config.AllowedCountries {
 				countries += k + " "
 			}
 			ctx.Abort(422, "country "+country+" not allowed, must be one of: "+countries)
@@ -103,11 +102,11 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			return
 		}
 
-		hash, computed = server.CreateMatrixComputation(mat, country, int(speed_profile))
+		hash, computed = server.Geo.CreateMatrixComputation(mat, country, int(speed_profile))
 
 		// launch computation here if the result wasn't proxied.
 		if !computed {
-			go server.ComputeMatrix(hash)
+			go server.Geo.ComputeMatrix(hash)
 		}
 	} else {
 		ctx.Abort(400, "Missing matrix data or speed profile or country. You sent: "+buf.String())
@@ -122,7 +121,7 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 // Returns a computation from the server as identified by the resource parameter
 // in GET.
 func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
-	progress, err := server.GetMatrixComputationProgress(resource)
+	progress, err := server.Geo.GetMatrixComputationProgress(resource)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -130,7 +129,7 @@ func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 
 	if progress == "complete" {
 		url := fmt.Sprintf("/spp/%s/result", resource)
-		debug.Println("redirect ->", url)
+		server.Geo.Debug.Println("redirect ->", url)
 		ctx.Redirect(303, url)
 	} else {
 		ctx.ContentType("json")
@@ -142,24 +141,24 @@ func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 }
 
 func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string {
-	if ex, _ := server.client.Exists(resource); !ex {
+	if ex, _ := server.Geo.Client.Exists(resource); !ex {
 		ctx.Abort(500, "Result expired. POST again.")
 		return ""
 	}
 
-	progress, err := server.GetMatrixComputationProgress(resource)
+	progress, err := server.Geo.GetMatrixComputationProgress(resource)
 	if progress != "complete" {
 		ctx.Abort(403, "Computation is not ready yet.")
 		return ""
 	}
 
-	if exists, _ := server.client.Hexists(resource, "see"); exists {
-		debug.Println("Got proxy result")
-		pointer, _ := server.client.Hget(resource, "see")
+	if exists, _ := server.Geo.Client.Hexists(resource, "see"); exists {
+		server.Geo.Debug.Println("Got proxy result")
+		pointer, _ := server.Geo.Client.Hget(resource, "see")
 		resource = string(pointer)
 	}
 
-	data, err := server.client.Hget(resource, "result")
+	data, err := server.Geo.Client.Hget(resource, "result")
 	if err != nil {
 		ctx.Abort(500, "Redis error: "+err.Error())
 		return ""
@@ -174,7 +173,7 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 }
 
 func (server *Server) GetServerStatus(ctx *web.Context) string {
-	db, _ := sql.Open("postgres", server.Config.String())
+	db, _ := sql.Open("postgres", server.Geo.Config.String())
 	defer db.Close()
 
 	err := db.Ping()
@@ -187,92 +186,12 @@ func (server *Server) GetServerStatus(ctx *web.Context) string {
 	return "OK"
 }
 
-func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
-	s_lat, lat_ok := ctx.Params["lat"]
-	s_long, long_ok := ctx.Params["long"]
-
-	// TODO(ane): implement automatic lookup of country
-	s_country, country_ok := ctx.Params["country"]
-
-	if !lat_ok || !long_ok || !country_ok {
-		ctx.Abort(400, fmt.Sprintf("Missing parameter, need lat, long, country, you gave: %q", ctx.Params))
-		return ""
-	}
-
-	lat, err := strconv.ParseFloat(s_lat, 32)
-	if err != nil {
-		ctx.Abort(400, fmt.Sprintf("Latitude %s is invalid, cannot parse!", s_lat))
-		return ""
-	}
-
-	long, err := strconv.ParseFloat(s_long, 32)
-	if err != nil {
-		ctx.Abort(400, fmt.Sprintf("Longitude %s is invalid, cannot parse!", s_long))
-		return ""
-	}
-
-	if _, ok := server.Config.AllowedCountries[s_country]; !ok {
-		ctx.Abort(500, fmt.Sprintf("Country %s not allowed", s_country))
-		return ""
-	}
-
-	coord := Coord{lat, long}
-
-	corr_node, err := geo.CorrectPoint(server.Config, coord, s_country)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	response, err := json.Marshal(corr_node)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.ContentType("application/json")
-	return string(response)
-}
-
-func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
-	nodes, ex := ctx.Params["nodes"]
-	country, ex2 := ctx.Params["country"]
-
-	if !ex || !ex2 {
-		ctx.Abort(400, fmt.Sprintf("Missing parameter: either nodes or country is missing"))
-		return ""
-	}
-
-	var parsedNodes []int
-	if err := json.Unmarshal([]byte(nodes), &parsedNodes); err != nil {
-		ctx.Abort(400, err.Error())
-		return ""
-	}
-
-	coordinates, err := geo.GetCoordinates(server.Config, country, parsedNodes)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	cont, err := json.Marshal(coordinates)
-	if err != nil {
-		ctx.Abort(500, err.Error())
-		return ""
-	}
-
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.ContentType("application/json")
-	return string(cont)
-}
-
 func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 
 	var (
-		paths    PathsInput
-		computed []CoordinatePath
+		paths    geo.PathsInput
+		computed []geo.CoordinatePath
 	)
 
 	if err := json.Unmarshal(content, &paths); err != nil {
@@ -280,7 +199,7 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 		return ""
 	} else {
 		var err error
-		computed, err = geo.CalculateCoordinatePaths(server.Config, paths)
+		computed, err = server.Geo.CalculateCoordinatePaths(paths)
 		if err != nil {
 			ctx.Abort(422, "Couldn't resolve addresses: "+err.Error())
 			return ""
@@ -300,7 +219,7 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 
 func (server *Server) PostResolve(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
-	var locations, resolvedLocations []Location
+	var locations, resolvedLocations []geo.Location
 
 	// Parse params
 	if err := json.Unmarshal(content, &locations); err != nil {
@@ -308,7 +227,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
-			newLoc, err := geo.ResolveLocation(server.Config, locations[i])
+			newLoc, err := server.Geo.ResolveLocation(locations[i])
 			if err != nil {
 				ctx.Abort(422, "Resolvation failure: "+err.Error())
 			}
