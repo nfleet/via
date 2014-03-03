@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/hoisie/web"
+	"github.com/nfleet/via/geo"
 )
 
 var allowed_speeds = []int{40, 60, 80, 100, 120}
@@ -24,7 +25,7 @@ func contains(a int, list []int) bool {
 }
 
 func check_coordinate_sanity(matrix []Coord, country string) (bool, error) {
-	bbox := bounding_boxes[country]
+	bbox := geo.BoundingBoxes[country]
 
 	verify := func(pair []float64) bool {
 		lat, long := pair[0], pair[1]
@@ -90,7 +91,7 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			return
 		}
 
-		mat, err := parse_json_matrix(data)
+		mat, err := geo.ParseJsonMatrix(data)
 		if err != nil {
 			ctx.Abort(422, err.Error())
 			return
@@ -217,7 +218,7 @@ func (server *Server) GetCorrectCoordinate(ctx *web.Context) string {
 
 	coord := Coord{lat, long}
 
-	corr_node, err := CorrectPoint(server.Config, coord, s_country)
+	corr_node, err := geo.CorrectPoint(server.Config, coord, s_country)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -249,7 +250,7 @@ func (server *Server) GetNodesToCoordinates(ctx *web.Context) string {
 		return ""
 	}
 
-	coordinates, err := GetCoordinates(server.Config, country, parsedNodes)
+	coordinates, err := geo.GetCoordinates(server.Config, country, parsedNodes)
 	if err != nil {
 		ctx.Abort(500, err.Error())
 		return ""
@@ -279,7 +280,7 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 		return ""
 	} else {
 		var err error
-		computed, err = CalculateCoordinatePaths(server.Config, paths)
+		computed, err = geo.CalculateCoordinatePaths(server.Config, paths)
 		if err != nil {
 			ctx.Abort(422, "Couldn't resolve addresses: "+err.Error())
 			return ""
@@ -307,7 +308,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
-			newLoc, err := ResolveLocation(server.Config, locations[i])
+			newLoc, err := geo.ResolveLocation(server.Config, locations[i])
 			if err != nil {
 				ctx.Abort(422, "Resolvation failure: "+err.Error())
 			}
