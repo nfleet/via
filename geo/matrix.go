@@ -1,4 +1,4 @@
-package main
+package geo
 
 import (
 	"bytes"
@@ -27,8 +27,8 @@ func CreateMatrixHash(matrixData, country string, speed_profile int) string {
 // has not been parsed into JSON. Stores parsedData into Redis in binary format.
 // Returns the hash to be used with Redis and true whether a proxy resource was created,
 // false if the resource is new.
-func (server *Server) CreateMatrixComputation(matrix []Coord, country string, speed_profile int) (string, bool) {
-	c := server.client
+func (g *Geo) CreateMatrixComputation(matrix []Coord, country string, speed_profile int) (string, bool) {
+	c := g.client
 	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
 	// check if computation exists
 	if exists, _ := c.Exists(matrixHash); exists {
@@ -37,7 +37,7 @@ func (server *Server) CreateMatrixComputation(matrix []Coord, country string, sp
 		c.Hset(newHash, "see", []byte(matrixHash))
 		ttl, _ := c.Ttl(matrixHash)
 		c.Expire(newHash, ttl)
-		debug.Printf("Created proxy resource %s (expires in %d sec)", newHash, ttl)
+		g.Debug.Printf("Created proxy resource %s (expires in %d sec)", newHash, ttl)
 		return newHash, true
 	}
 
@@ -53,25 +53,25 @@ func (server *Server) CreateMatrixComputation(matrix []Coord, country string, sp
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(matrix); err != nil {
-		debug.Println("encode error", err)
+		g.Debug.Println("encode error", err)
 	}
 
 	c.Hset(matrixHash, "data", buf.Bytes())
 	c.Expire(matrixHash, 3600)
-	debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, expiry)
+	g.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, expiry)
 
 	return matrixHash, false
 }
 
 // Returns computation progress for the matrix identified by matrixHash.
-func (server *Server) GetMatrixComputationProgress(matrixHash string) (string, error) {
-	c := server.client
+func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
+	c := g.client
 	workingHash := matrixHash
 	if exists, _ := c.Exists(workingHash); !exists {
 		return "", errors.New("no matrix found for hash " + workingHash)
 	}
 	if exists, _ := c.Hexists(workingHash, "see"); exists {
-		debug.Println("Resolving proxy")
+		g.Debug.Println("Resolving proxy")
 		pointer, _ := c.Hget(workingHash, "see")
 		workingHash = string(pointer)
 	}
@@ -80,20 +80,20 @@ func (server *Server) GetMatrixComputationProgress(matrixHash string) (string, e
 }
 
 // Computes a matrix hash. This should be launched in a goroutine, not in the main thread.
-func (server *Server) ComputeMatrix(matrixHash string) {
+func (g *Geo) ComputeMatrix(matrixHash string) {
 	var coords []Coord
-	rc := server.client
+	rc := g.client
 	t0 := time.Now()
 
 	set_status := func(status string) {
-		debug.Println(status)
+		g.Debug.Println(status)
 		rc.Hset(matrixHash, "progress", []byte(status))
 	}
 
 	// error handling
 	defer func() {
 		if r := recover(); r != nil {
-			debug.Println("Recovered in Compute.", r)
+			g.Debug.Println("Recovered in Compute.", r)
 			set_status("error")
 		}
 	}()
@@ -116,7 +116,7 @@ func (server *Server) ComputeMatrix(matrixHash string) {
 
 	country, _ := rc.Hget(matrixHash, "country")
 
-	nodes, err := server.RunGeoindexer(string(country), coords, 4)
+	nodes, err := g.RunGeoindexer(string(country), coords, 4)
 	if err != nil {
 		panic("Geoindex error:" + err.Error())
 	}
@@ -129,7 +129,7 @@ func (server *Server) ComputeMatrix(matrixHash string) {
 
 	speed_profile_raw, _ := rc.Hget(matrixHash, "speed_profile")
 	speed_profile, _ := binary.Varint(speed_profile_raw)
-	debug.Println("got country", string(country), "with profile", speed_profile)
+	g.Debug.Println("got country", string(country), "with profile", speed_profile)
 
 	// todo: use nodes
 	var res string
@@ -138,19 +138,19 @@ func (server *Server) ComputeMatrix(matrixHash string) {
 	// case 1: missing }
 	if strings.Index(res, "}") == -1 {
 		res = res + "}"
-		debug.Println("brace missing")
+		g.Debug.Println("brace missing")
 	} else if strings.Index(res, "}") != len(res)-1 {
 		braceIndex := strings.Index(res, "}")
 		junk := res[braceIndex+1:]
 		res = res[:braceIndex+1]
-		debug.Printf("Stripped extra data: %s", junk)
+		g.Debug.Printf("Stripped extra data: %s", junk)
 	}
 
 	rc.Hset(matrixHash, "result", []byte(res))
 	res = ""
 
 	t1 := time.Since(t0)
-	debug.Println("calculated matrix in", t1)
+	g.Debug.Println("calculated matrix in", t1)
 
 	set_status("complete")
 }

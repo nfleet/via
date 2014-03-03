@@ -1,4 +1,4 @@
-package main
+package geo
 
 import (
 	"database/sql"
@@ -10,32 +10,6 @@ import (
 	"github.com/nfleet/via/ch"
 )
 
-type Path struct {
-	Length int   `json:"length"`
-	Nodes  []int `json:"nodes"`
-}
-
-type Edge struct {
-	Source Location
-	Target Location
-}
-
-type NodeEdge struct {
-	Source int `json:"source"`
-	Target int `json:"target"`
-}
-
-type PathsInput struct {
-	SpeedProfile int
-	Edges        []Edge
-}
-
-type CoordinatePath struct {
-	Distance int     `json:"distance"`
-	Time     int     `json:"time"`
-	Coords   []Coord `json:"coords"`
-}
-
 func IsMissingCoordinate(loc Location) bool {
 	if loc.Coordinate.Latitude == 0.0 && loc.Coordinate.Longitude == 0.0 {
 		return true
@@ -43,12 +17,12 @@ func IsMissingCoordinate(loc Location) bool {
 	return false
 }
 
-func calculate_distance(config Config, nodes []int, country string) (int, error) {
+func (g *Geo) CalculateDistance(nodes []int, country string) (int, error) {
 	if len(nodes) < 2 {
 		return 0, nil
 	}
 
-	db, _ := sql.Open("postgres", config.String())
+	db, _ := sql.Open("postgres", g.Config.String())
 	defer db.Close()
 
 	var edgePairs []string
@@ -78,19 +52,19 @@ func calculate_distance(config Config, nodes []int, country string) (int, error)
 
 }
 
-func correct_coordinates(config Config, source, target Location) (CHNode, CHNode, error) {
+func (g *Geo) CorrectCoordinates(source, target Location) (CHNode, CHNode, error) {
 	// step 1: coordinate -> node
 	srcLat, srcLong := source.Coordinate.Latitude, source.Coordinate.Longitude
 	trgLat, trgLong := target.Coordinate.Latitude, target.Coordinate.Longitude
 
 	country := source.Address.Country
 
-	srcNode, err := CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(country))
+	srcNode, err := g.CorrectPoint(config, Coord{srcLat, srcLong}, strings.ToLower(country))
 	if err != nil {
 		return CHNode{}, CHNode{}, err
 	}
 
-	trgNode, err := CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(country))
+	trgNode, err := g.CorrectPoint(config, Coord{trgLat, trgLong}, strings.ToLower(country))
 	if err != nil {
 		return CHNode{}, CHNode{}, err
 	}
@@ -98,7 +72,7 @@ func correct_coordinates(config Config, source, target Location) (CHNode, CHNode
 	return srcNode, trgNode, nil
 }
 
-func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]Path, error) {
+func (g *Geo) CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]Path, error) {
 	input_data, err := json.Marshal(nodeEdges)
 	if err != nil {
 		return []Path{}, err
@@ -127,7 +101,7 @@ func CalculatePaths(nodeEdges []NodeEdge, country string, speed_profile int) ([]
 	return edges.Edges, nil
 }
 
-func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath, error) {
+func (g *Geo) CalculateCoordinatePaths(ig Config, input PathsInput) ([]CoordinatePath, error) {
 	var edges []NodeEdge
 
 	for _, edge := range input.Edges {
@@ -135,7 +109,7 @@ func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath
 
 		if IsMissingCoordinate(edge.Source) {
 			var err error
-			source, err = ResolveLocation(config, edge.Source)
+			source, err = g.ResolveLocation(edge.Source)
 			source.Address.Country = edge.Source.Address.Country
 			if err != nil {
 				return []CoordinatePath{}, err
@@ -146,7 +120,7 @@ func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath
 
 		if IsMissingCoordinate(edge.Target) {
 			var err error
-			target, err = ResolveLocation(config, edge.Target)
+			target, err = g.ResolveLocation(edge.Target)
 			target.Address.Country = edge.Target.Address.Country
 			if err != nil {
 				return []CoordinatePath{}, err
@@ -155,7 +129,7 @@ func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath
 			target = edge.Target
 		}
 
-		srcNode, trgNode, err := correct_coordinates(config, source, target)
+		srcNode, trgNode, err := g.CorrectCoordinates(config, source, target)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
@@ -165,7 +139,7 @@ func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath
 
 	country := strings.ToLower(input.Edges[0].Source.Address.Country)
 
-	nodePaths, err := CalculatePaths(edges, country, input.SpeedProfile)
+	nodePaths, err := g.CalculatePaths(edges, country, input.SpeedProfile)
 	if err != nil {
 		return []CoordinatePath{}, err
 	}
@@ -174,13 +148,13 @@ func CalculateCoordinatePaths(config Config, input PathsInput) ([]CoordinatePath
 
 	for _, nodePath := range nodePaths {
 		// step 3: get coordinates
-		coordinateList, err := GetCoordinates(config, country, nodePath.Nodes)
+		coordinateList, err := g.GetCoordinates(config, country, nodePath.Nodes)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
 
 		// step 4: get distance
-		distance, err := calculate_distance(config, nodePath.Nodes, country)
+		distance, err := g.CalculateDistance(config, nodePath.Nodes, country)
 		if err != nil {
 			return []CoordinatePath{}, err
 		}
