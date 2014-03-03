@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/hoisie/redis"
@@ -16,18 +14,9 @@ import (
 
 type (
 	Server struct {
-		client redis.Client
 		Config
 	}
 
-	Config struct {
-		Port             int
-		DbUser           string
-		DbName           string
-		AllowedCountries map[string]bool
-	}
-
-	Coord     []float64
 	debugging bool
 )
 
@@ -41,27 +30,9 @@ var (
 	debug    debugging
 )
 
-func (config *Config) String() string {
-	s := fmt.Sprintf("sslmode=disable user=%s dbname=%s", config.DbUser, config.DbName)
-	return s
-}
-
 func (s *Server) Splash(ctx *web.Context) {
 	ctx.ContentType("image/jpeg")
 	http.ServeFile(ctx, ctx.Request, "./splash.jpg")
-}
-
-func load_config(file string) (Config, error) {
-	contents, err := ioutil.ReadFile(file)
-	if err != nil {
-		return Config{}, err
-	}
-
-	var config Config
-	if err := json.Unmarshal(contents, &config); err != nil {
-		return Config{}, err
-	}
-	return config, nil
 }
 
 func parse_flags() {
