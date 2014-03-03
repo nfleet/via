@@ -1,4 +1,4 @@
-package main
+package geo
 
 import (
 	"database/sql"
@@ -12,8 +12,8 @@ type CHNode struct {
 	Coord
 }
 
-func CorrectPoint(config Config, point Coord, country string) (CHNode, error) {
-	db, err := sql.Open("postgres", config.String())
+func (g *Geo) CorrectPoint(point Coord, country string) (CHNode, error) {
+	db, _ := sql.Open("postgres", g.Config.String())
 	if err != nil {
 		return CHNode{}, err
 	}
@@ -39,9 +39,11 @@ func CorrectPoint(config Config, point Coord, country string) (CHNode, error) {
 
 }
 
-func GetCoordinates(config Config, country string, nodes []int) ([]Coord, error) {
-	// open sql
-	db, _ := sql.Open("postgres", config.String())
+func (g *Geo) GetCoordinates(country string, nodes []int) ([]Coord, error) {
+	db, _ := sql.Open("postgres", g.Config.String())
+	if err != nil {
+		return CHNode{}, err
+	}
 	defer db.Close()
 
 	query := `

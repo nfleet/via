@@ -1,6 +1,6 @@
-package main
+package geo
 
-var bounding_boxes = map[string]map[string]float64{
+var BoundingBoxes = map[string]map[string]float64{
 	"finland": map[string]float64{
 		"long_min": 20.54,     // Border between Swe-Nor-Fin
 		"long_max": 31.5867,   // Somewhere in Ilomantsi

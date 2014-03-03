@@ -1,4 +1,4 @@
-package main
+package geo
 
 import (
 	"database/sql"
@@ -8,32 +8,8 @@ import (
 	"strings"
 )
 
-type Coordinate struct {
-	Latitude  float64
-	Longitude float64
-	System    string
-}
-
-type Location struct {
-	Address    Address
-	Coordinate Coordinate
-}
-
-type Address struct {
-	Street          string
-	HouseNumber     int
-	City            string
-	Country         string
-	Region          string
-	PostalCode      string
-	Confidence      float64
-	ApartmentLetter string
-	ApartmentNumber int
-	AdditionalInfo  string
-}
-
-func GetFuzzyAddress(config Config, address Address, count int) ([]Location, error) {
-	newconf := Config(config)
+func (g *Geo) GetFuzzyAddress(address Address, count int) ([]Location, error) {
+	newconf := Config(g.Config)
 	newconf.DbName = "trgm_test"
 
 	db, err := sql.Open("postgres", newconf.String())
@@ -88,10 +64,10 @@ func GetFuzzyAddress(config Config, address Address, count int) ([]Location, err
 // Resolves a location from the database.
 // Returns 20 when everything fails (i.e. database problem), 30 when
 // an address could not be found or when the street wasn't supplied.
-func ResolveLocation(config Config, location Location) (Location, error) {
+func (g *Geo) ResolveLocation(location Location) (Location, error) {
 	if IsMissingCoordinate(location) {
 		if location.Address.Street != "" {
-			locs, err := GetFuzzyAddress(config, location.Address, 1)
+			locs, err := g.GetFuzzyAddress(location.Address, 1)
 			if err != nil {
 				location.Address.Confidence = 20.0
 				return location, err
@@ -116,8 +92,7 @@ func ResolveLocation(config Config, location Location) (Location, error) {
 		}
 
 		coord := location.Coordinate
-		correctCoord, err := CorrectPoint(config,
-			Coord{coord.Latitude, coord.Longitude}, location.Address.Country)
+		correctCoord, err := g.CorrectPoint(Coord{coord.Latitude, coord.Longitude}, location.Address.Country)
 
 		if err != nil {
 			return location, err

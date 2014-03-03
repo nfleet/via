@@ -1,15 +1,6 @@
-package main
+package geo
 
-import (
-	"github.com/hoisie/redis"
-	"testing"
-)
-
-var (
-	client    redis.Client
-	config, _ = load_config("development.json")
-	server    = Server{client, config}
-)
+import "testing"
 
 // The matrix sample we will be using.
 var testPayload = struct {
@@ -23,12 +14,12 @@ var testPayload = struct {
 }
 
 func erase_computation(hash string, t *testing.T) {
-	ok, err := server.client.Del(hash)
+	ok, err := test_via.client.Del(hash)
 	if err != nil {
 		t.Fatalf("deleting %s failed: %s", hash, err.Error())
 	}
 
-	if ok, _ = server.client.Exists(hash); ok {
+	if ok, _ = test_via.client.Exists(hash); ok {
 		t.Fatalf("%s should be deleted", hash)
 	}
 }
@@ -50,7 +41,7 @@ func TestMatrixHashUniqueness(t *testing.T) {
 }
 
 func TestMatrixComputationCreation(t *testing.T) {
-	hash, res := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, res := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	if res != false {
@@ -60,11 +51,11 @@ func TestMatrixComputationCreation(t *testing.T) {
 
 func TestMatrixProxyCreation(t *testing.T) {
 	// res ignored, tested by above method.
-	hash, _ := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash, _ := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash, t)
 
 	// create again
-	hash2, res2 := server.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
+	hash2, res2 := test_via.CreateMatrixComputation(testPayload.matrix, testPayload.country, testPayload.speed_profile)
 	defer erase_computation(hash2, t)
 
 	if hash == hash2 {

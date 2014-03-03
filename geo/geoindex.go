@@ -1,4 +1,4 @@
-package main
+package geo
 
 import (
 	"database/sql"
@@ -18,9 +18,9 @@ var table_names = map[string]string{
 //
 // If you use it synchronously I will send rabid badgers after you.
 //   -ane
-func Geoindex(country string, config Config, coordinates []Coord, mapped []int) error {
+func (g *Geo) Geoindex(country string, coordinates []Coord, mapped []int) error {
 	// open sql
-	db, _ := sql.Open("postgres", config.String())
+	db, _ := sql.Open("postgres", g.Config.String())
 	defer db.Close()
 
 	t := time.Now()
@@ -34,7 +34,7 @@ func Geoindex(country string, config Config, coordinates []Coord, mapped []int) 
 		err := db.QueryRow(q).Scan(&node)
 		switch {
 		case err == sql.ErrNoRows:
-			debug.Println("No rows for those coords.")
+			g.Debug.Println("No rows for those coords.")
 		case err != nil:
 			return err
 		default:
@@ -42,7 +42,7 @@ func Geoindex(country string, config Config, coordinates []Coord, mapped []int) 
 		}
 	}
 	t2 := time.Since(t)
-	debug.Printf("goroutine: Geoindexed %d nodes in %s", len(coordinates), t2)
+	g.Debug.Printf("goroutine: Geoindexed %d nodes in %s", len(coordinates), t2)
 	copy(mapped, coordNodes)
 
 	return nil
@@ -51,7 +51,7 @@ func Geoindex(country string, config Config, coordinates []Coord, mapped []int) 
 // Runs the geoindexer for a coordinate set. Launches N connections to the PostgreSQL
 // geoindexing database. Currently you should use N = 4,6,8, the benefit tapers off
 // after 8 connections.
-func (s *Server) RunGeoindexer(country string, coordinates []Coord, connections int) ([]int, error) {
+func (g *Geo) RunGeoindexer(country string, coordinates []Coord, connections int) ([]int, error) {
 	if connections > 1 && (connections%2) != 0 {
 		return []int{}, errors.New("connections must be even when more than 1, you gave: " + string(connections))
 	}
@@ -72,7 +72,7 @@ func (s *Server) RunGeoindexer(country string, coordinates []Coord, connections 
 	// process leftovers, e.g. 10 === 2 (mod 4) -> need a fifth connection in that case
 	remnants := len(coordinates) % connections
 	if remnants > 0 {
-		debug.Printf("Got %d remnants.", remnants)
+		g.Debug.Printf("Got %d remnants.", remnants)
 		src = append(src, coordinates[offset:offset+remnants])
 		dst = append(dst, make([]int, remnants))
 		jobs++
@@ -85,7 +85,7 @@ func (s *Server) RunGeoindexer(country string, coordinates []Coord, connections 
 		wg.Add(1)
 		j := j
 		go func() {
-			err := Geoindex(country, s.Config, src[j], dst[j])
+			err := g.Geoindex(country, src[j], dst[j])
 			if err != nil {
 				// send the error to err_chan
 				err_chan <- err
@@ -101,11 +101,11 @@ func (s *Server) RunGeoindexer(country string, coordinates []Coord, connections 
 
 	// This will cause the function to block until err_chan is closed.
 	for err := range err_chan {
-		debug.Println("Geoindexing error:", err.Error())
+		g.Debug.Println("Geoindexing error:", err.Error())
 		return nil, err
 	}
 
-	debug.Printf("Geoindexing done in %s (%d+%d connections)", time.Since(t), connections, jobs-connections)
+	g.Debug.Printf("Geoindexing done in %s (%d+%d connections)", time.Since(t), connections, jobs-connections)
 	var res []int
 	for _, chunk := range dst {
 		res = append(res, chunk...)
