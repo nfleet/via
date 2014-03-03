@@ -3,20 +3,23 @@ package geo
 import "testing"
 
 func TestResolvationForAddress(t *testing.T) {
-	location := Location{
-		Address: Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"},
+	locations := []Location{
+		{Address: Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"}},
+		{Address: Address{City: "Stuttgart", Street: "Calwer Straße", Country: "germany"}},
 	}
 
-	loc, err := test_geo.ResolveLocation(location)
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, loc := range locations {
+		resolvedLoc, err := test_geo.ResolveLocation(loc)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if IsMissingCoordinate(loc) {
-		t.Fatalf("Geocoding failed: %#v is missing coordinates", loc)
-	}
+		if IsMissingCoordinate(resolvedLoc) {
+			t.Fatalf("Geocoding failed: %#v is missing coordinates", resolvedLoc)
+		}
 
-	t.Logf("Geocoded %v => %v", location, loc)
+		t.Logf("Geocoded %v => %v", loc, resolvedLoc)
+	}
 }
 
 func TestResolvationCoordinateFixing(t *testing.T) {
