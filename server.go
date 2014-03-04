@@ -7,6 +7,8 @@ import (
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
+	"github.com/nfleet/via/geodb"
+	"github.com/nfleet/via/geotypes"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/bmizerany/pq"
@@ -14,7 +16,9 @@ import (
 
 type (
 	Server struct {
-		Geo *geo.Geo
+		Geo              *geo.Geo
+		AllowedCountries map[string]bool
+		Port             int
 	}
 )
 
@@ -55,7 +59,7 @@ func Options(ctx *web.Context, route string) string {
 func main() {
 	parse_flags()
 
-	var config geo.Config
+	var config geotypes.Config
 	var configFile string
 
 	args := flag.Args()
@@ -72,9 +76,10 @@ func main() {
 		return
 	}
 
-	geo := geo.NewGeo(Debug, config.DbUser, config.DbName, config.Port, config.AllowedCountries)
+	geoDB := geodb.GeoPostgresDB{Config: config}
+	geo := geo.NewGeo(Debug, geoDB)
 
-	server := Server{geo}
+	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic
 	web.Get("/", Splash)
