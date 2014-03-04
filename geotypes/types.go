@@ -1,16 +1,17 @@
-package geo
+package geotypes
 
-import (
-	"fmt"
-
-	"github.com/hoisie/redis"
-)
+import "fmt"
 
 type Config struct {
 	Port             int
 	DbUser           string
 	DbName           string
 	AllowedCountries map[string]bool
+}
+
+type CHNode struct {
+	Id int
+	Coord
 }
 
 type Coord []float64
@@ -71,14 +72,33 @@ type Matrix struct {
 	Nodes []int `json:"sources"`
 }
 
-type Geo struct {
-	Debug  debugging
-	Expiry int
-	Client redis.Client
-	Config
+// GeoDB implements a database abstraction layer that hides all
+// functionality related to databases.
+type GeoDB interface {
+	// Returns the point closest to the coordinates
+	// in the road network, based on geoindexed data.
+	QueryClosestPoint(point Coord, country string) (CHNode, error)
+
+	// Transforms the nodes from the graph nodes,
+	// which are indexed by integers, and returns the corresponding
+	// coordinates.
+	QueryCoordinates(nodes []int, country string) ([]Coord, error)
+
+	// Gets an address using fuzzy search. Uses the street and city at
+	// the moment.
+	QueryFuzzyAddress(address Address, count int) ([]Location, error)
+
+	// Calculates the distance between edges. If the array nodes is indexed
+	// with the variable i, then edge pairs are formed like thus (i, i+1), (i+1, i+2)
+	// and so on.
+	QueryDistance(nodes []int, country string) (int, error)
+
+	// Returns the server status, nil if everything works fine.
+	QueryStatus() error
 }
 
 func (config *Config) String() string {
-	s := fmt.Sprintf("sslmode=disable user=%s dbname=%s", config.DbUser, config.DbName)
+	s := fmt.Sprintf("sslmode=disable user=%s dbname=%s",
+		config.DbUser, config.DbName)
 	return s
 }
