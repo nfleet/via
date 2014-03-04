@@ -1,11 +1,15 @@
 package geo
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/nfleet/via/geotypes"
+)
 
 func TestResolvationForAddress(t *testing.T) {
-	locations := []Location{
-		{Address: Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"}},
-		{Address: Address{City: "Stuttgart", Street: "Calwer Straße", Country: "germany"}},
+	locations := []geotypes.Location{
+		{Address: geotypes.Address{City: "Helsinki", Street: "Esplanadi", Country: "finland"}},
+		{Address: geotypes.Address{City: "Stuttgart", Street: "Calwer Straße", Country: "germany"}},
 	}
 
 	for _, loc := range locations {
@@ -23,9 +27,9 @@ func TestResolvationForAddress(t *testing.T) {
 }
 
 func TestResolvationCoordinateFixing(t *testing.T) {
-	location := Location{
-		Address:    Address{Country: "finland"},
-		Coordinate: Coordinate{Latitude: 62.24, Longitude: 25.74},
+	location := geotypes.Location{
+		Address:    geotypes.Address{Country: "finland"},
+		Coordinate: geotypes.Coordinate{Latitude: 62.24, Longitude: 25.74},
 	}
 
 	loc, err := test_geo.ResolveLocation(location)

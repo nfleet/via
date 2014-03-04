@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/nfleet/via/ch"
+	"github.com/nfleet/via/geotypes"
 )
 
 func CreateMatrixHash(matrixData, country string, speed_profile int) string {
@@ -27,7 +28,7 @@ func CreateMatrixHash(matrixData, country string, speed_profile int) string {
 // has not been parsed into JSON. Stores parsedData into Redis in binary format.
 // Returns the hash to be used with Redis and true whether a proxy resource was created,
 // false if the resource is new.
-func (g *Geo) CreateMatrixComputation(matrix []Coord, country string, speed_profile int) (string, bool) {
+func (g *Geo) CreateMatrixComputation(matrix []geotypes.Coord, country string, speed_profile int) (string, bool) {
 	c := g.Client
 	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
 	// check if computation exists
@@ -81,7 +82,7 @@ func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
 
 // Computes a matrix hash. This should be launched in a goroutine, not in the main thread.
 func (g *Geo) ComputeMatrix(matrixHash string) {
-	var coords []Coord
+	var coords []geotypes.Coord
 	rc := g.Client
 	t0 := time.Now()
 

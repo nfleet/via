@@ -1,14 +1,18 @@
 package geo
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/nfleet/via/geotypes"
+)
 
 // The matrix sample we will be using.
 var testPayload = struct {
-	matrix        []Coord
+	matrix        []geotypes.Coord
 	country       string
 	speed_profile int
 }{
-	[]Coord{{21.5, 62.2}, {25.0, 64}},
+	[]geotypes.Coord{{21.5, 62.2}, {25.0, 64}},
 	"finland",
 	120,
 }

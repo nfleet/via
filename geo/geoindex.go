@@ -1,11 +1,11 @@
 package geo
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
+
+	"github.com/nfleet/via/geotypes"
 )
 
 var table_names = map[string]string{
@@ -15,31 +15,19 @@ var table_names = map[string]string{
 
 // Geoindexes the coordinates. Modifies mapped with the results since
 // modifying a slice modifies the underlying array. Note! Launch this as a goroutine!
-//
-// If you use it synchronously I will send rabid badgers after you.
-//   -ane
-func (g *Geo) Geoindex(country string, coordinates []Coord, mapped []int) error {
-	// open sql
-	db, _ := sql.Open("postgres", g.Config.String())
-	defer db.Close()
+func (g *Geo) Geoindex(country string, coordinates []geotypes.Coord, mapped []int) error {
 
 	t := time.Now()
 	var coordNodes []int
 
 	for _, coord := range coordinates {
-		lat, long := coord[0], coord[1]
+		node, err := g.DB.QueryClosestPoint(geotypes.Coord{coord[0], coord[1]}, country)
 
-		var node int
-		q := fmt.Sprintf("SELECT id FROM %s ORDER BY coord <-> point '(%.5f,%.5f)' LIMIT 1", table_names[country], lat, long)
-		err := db.QueryRow(q).Scan(&node)
-		switch {
-		case err == sql.ErrNoRows:
-			g.Debug.Println("No rows for those coords.")
-		case err != nil:
+		if err != nil {
 			return err
-		default:
-			coordNodes = append(coordNodes, node)
 		}
+
+		coordNodes = append(coordNodes, node.Id)
 	}
 	t2 := time.Since(t)
 	g.Debug.Printf("goroutine: Geoindexed %d nodes in %s", len(coordinates), t2)
@@ -51,12 +39,12 @@ func (g *Geo) Geoindex(country string, coordinates []Coord, mapped []int) error 
 // Runs the geoindexer for a coordinate set. Launches N connections to the PostgreSQL
 // geoindexing database. Currently you should use N = 4,6,8, the benefit tapers off
 // after 8 connections.
-func (g *Geo) RunGeoindexer(country string, coordinates []Coord, connections int) ([]int, error) {
+func (g *Geo) RunGeoindexer(country string, coordinates []geotypes.Coord, connections int) ([]int, error) {
 	if connections > 1 && (connections%2) != 0 {
 		return []int{}, errors.New("connections must be even when more than 1, you gave: " + string(connections))
 	}
 	chunkSize := len(coordinates) / connections
-	src := make([][]Coord, connections)
+	src := make([][]geotypes.Coord, connections)
 	dst := make([][]int, connections)
 
 	offset := 0
