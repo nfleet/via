@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+
+	"github.com/nfleet/via/geotypes"
 )
 
 // Parses the JSON input coordinates into an array.
-func ParseJsonMatrix(matrix string) ([]Coord, error) {
-	var target []Coord
+func ParseJsonMatrix(matrix string) ([]geotypes.Coord, error) {
+	var target []geotypes.Coord
 
 	err := json.Unmarshal([]byte(matrix), &target)
 	if err != nil {
@@ -19,7 +21,7 @@ func ParseJsonMatrix(matrix string) ([]Coord, error) {
 
 // Converts the coordinate array back into JSON.
 func MatrixToJson(nodes []int) ([]byte, error) {
-	cont, err := json.Marshal(Matrix{Nodes: nodes})
+	cont, err := json.Marshal(geotypes.Matrix{Nodes: nodes})
 	if err != nil {
 		return []byte{}, err
 	}

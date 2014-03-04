@@ -5,27 +5,35 @@ import (
 	"io/ioutil"
 
 	_ "github.com/bmizerany/pq"
+	"github.com/hoisie/redis"
+	"github.com/nfleet/via/geotypes"
 )
 
-func LoadConfig(file string) (Config, error) {
+type debugging bool
+
+type Geo struct {
+	Debug  debugging
+	Expiry int
+	Client redis.Client
+	DB     geotypes.GeoDB
+}
+
+func LoadConfig(file string) (geotypes.Config, error) {
 	contents, err := ioutil.ReadFile(file)
 	if err != nil {
-		return Config{}, err
+		return geotypes.Config{}, err
 	}
 
-	var config Config
+	var config geotypes.Config
 	if err := json.Unmarshal(contents, &config); err != nil {
-		return Config{}, err
+		return geotypes.Config{}, err
 	}
 	return config, nil
 }
 
-func NewGeo(debug bool, dbUser, dbName string, port int, allowedCountries map[string]bool) *Geo {
+func NewGeo(debug bool, db geotypes.GeoDB) *Geo {
 	g := new(Geo)
+	g.DB = db
 	g.Debug = debugging(debug)
-	g.Config.AllowedCountries = allowedCountries
-	g.Config.DbName = dbName
-	g.Config.DbUser = dbUser
-	g.Config.Port = port
 	return g
 }
