@@ -132,6 +132,37 @@ func api_coordinate_query(t *testing.T, edges []geo.Edge, speed_profile int) []g
 	return paths
 }
 
+func BenchmarkAPIPointCorrection(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		query_string := fmt.Sprintf("lat=%f&long=%f&country=%s", 62.24, 25.74, "finland")
+		request := fmt.Sprintf("http://localhost:%d/point?%s", test_geo.Config.Port, query_string)
+		if _, err := http.Get(request); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkAPIFinlandPointsToCoordinates(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		values := strings.Replace(fmt.Sprintf("%v", FinlandNodes), " ", ",", -1)
+		query_string := fmt.Sprintf("nodes=%s&country=%s", values, "finland")
+		request := fmt.Sprintf("http://localhost:%d/points?%s", test_geo.Config.Port, query_string)
+		if res, err := http.Get(request); err != nil || res.StatusCode != 200 {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkAPIGermanyPointsToCoordinates(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		values := strings.Replace(fmt.Sprintf("%v", GermanyNodes), " ", ",", -1)
+		query_string := fmt.Sprintf("nodes=%s&country=%s", values, "germany")
+		request := fmt.Sprintf("http://localhost:%d/points?%s", test_geo.Config.Port, query_string)
+		if res, err := http.Get(request); err != nil || res.StatusCode != 200 {
+			b.Fatal(err)
+		}
+	}
+}
 func TestAPICalculateCoordinatePathWithoutCoordinates(t *testing.T) {
 	api_coordinate_query(t, noCoordsFinland, 100)
 }
