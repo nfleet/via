@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
+	"github.com/nfleet/via/geotypes"
 )
 
 var allowed_speeds = []int{40, 60, 80, 100, 120}
@@ -23,7 +23,7 @@ func contains(a int, list []int) bool {
 	return false
 }
 
-func check_coordinate_sanity(matrix []geo.Coord, country string) (bool, error) {
+func check_coordinate_sanity(matrix []geotypes.Coord, country string) (bool, error) {
 	bbox := geo.BoundingBoxes[country]
 
 	verify := func(pair []float64) bool {
@@ -81,9 +81,9 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			return
 		}
 		// Sanitize country.
-		if _, ok := server.Geo.Config.AllowedCountries[country]; !ok {
+		if _, ok := server.AllowedCountries[country]; !ok {
 			countries := ""
-			for k := range server.Geo.Config.AllowedCountries {
+			for k := range server.AllowedCountries {
 				countries += k + " "
 			}
 			ctx.Abort(422, "country "+country+" not allowed, must be one of: "+countries)
@@ -173,25 +173,21 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 }
 
 func (server *Server) GetServerStatus(ctx *web.Context) string {
-	db, _ := sql.Open("postgres", server.Geo.Config.String())
-	defer db.Close()
+	err := server.Geo.DB.QueryStatus()
 
-	err := db.Ping()
-
-	if err != nil {
-		ctx.Abort(500, "Could not connect to database: "+err.Error())
-		return ""
+	if err == nil {
+		return "OK"
 	}
 
-	return "OK"
+	return fmt.Sprintf("Could not connect to database: %s\n", err.Error())
 }
 
 func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 
 	var (
-		paths    geo.PathsInput
-		computed []geo.CoordinatePath
+		paths    geotypes.PathsInput
+		computed []geotypes.CoordinatePath
 	)
 
 	if err := json.Unmarshal(content, &paths); err != nil {
@@ -219,7 +215,7 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 
 func (server *Server) PostResolve(ctx *web.Context) string {
 	content, err := ioutil.ReadAll(ctx.Request.Body)
-	var locations, resolvedLocations []geo.Location
+	var locations, resolvedLocations []geotypes.Location
 
 	// Parse params
 	if err := json.Unmarshal(content, &locations); err != nil {
