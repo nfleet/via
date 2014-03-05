@@ -32,12 +32,12 @@ func (g *Geo) CleanCppMessage(msg string) string {
 	res := msg
 	if strings.LastIndex(res, "}") == -1 {
 		res = res + "}"
-		g.Debug.Println("brace missing")
+		//g.Debug.Println("brace missing")
 	} else if strings.LastIndex(res, "}") != len(res)-1 {
 		braceIndex := strings.LastIndex(res, "}")
-		junk := res[braceIndex+1:]
+		//junk := res[braceIndex+1:]
 		res = res[:braceIndex+1]
-		g.Debug.Printf("Stripped extra data: %s", junk)
+		//g.Debug.Printf("Stripped extra data: %s", junk)
 	}
 	return res
 }

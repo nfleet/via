@@ -142,9 +142,9 @@ func (g *Geo) ComputeMatrix(matrixHash string) {
 		g.Debug.Println("brace missing")
 	} else if strings.Index(res, "}") != len(res)-1 {
 		braceIndex := strings.Index(res, "}")
-		junk := res[braceIndex+1:]
+		//junk := res[braceIndex+1:]
 		res = res[:braceIndex+1]
-		g.Debug.Printf("Stripped extra data: %s", junk)
+		//g.Debug.Printf("Stripped extra data: %s", junk)
 	}
 
 	rc.Hset(matrixHash, "result", []byte(res))
