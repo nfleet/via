@@ -31,9 +31,10 @@ func LoadConfig(file string) (geotypes.Config, error) {
 	return config, nil
 }
 
-func NewGeo(debug bool, db geotypes.GeoDB) *Geo {
-	g := new(Geo)
-	g.DB = db
-	g.Debug = debugging(debug)
-	return g
+func NewGeo(debug bool, db geotypes.GeoDB, expiry int) *Geo {
+	return &Geo{
+		DB:     db,
+		Debug:  debugging(debug),
+		Expiry: expiry,
+	}
 }
