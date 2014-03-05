@@ -10,6 +10,7 @@ import (
 	"github.com/nfleet/via/geotypes"
 )
 
+// Returns the fixed Location DTO for the Address, i.e. geocodes the Address and returns count results.
 func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([]geotypes.Location, error) {
 	newconf := geotypes.Config(g.Config)
 	newconf.DbName = "trgm_test"
