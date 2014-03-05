@@ -58,7 +58,7 @@ func (g *Geo) CreateMatrixComputation(matrix []geotypes.Coord, country string, s
 	}
 
 	c.Hset(matrixHash, "data", buf.Bytes())
-	c.Expire(matrixHash, 3600)
+	c.Expire(matrixHash, int64(g.Expiry))
 	g.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, g.Expiry)
 
 	return matrixHash, false
