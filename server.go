@@ -92,6 +92,7 @@ func main() {
 
 	// Path
 	web.Post("/paths", server.PostCoordinatePaths)
+	web.Post("/cpaths", server.PostCoordinatePaths)
 
 	// Address/Coordinate
 	web.Post("/resolve", server.PostResolve)
