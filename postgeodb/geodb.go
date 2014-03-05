@@ -1,4 +1,6 @@
-package geodb
+// postgeodb implements a PostgresSQL version of the GeoDB
+// interface.
+package postgeodb
 
 import (
 	"database/sql"
@@ -16,6 +18,8 @@ type GeoPostgresDB struct {
 	Config geotypes.Config
 }
 
+// Returns the status of the server, tests the connection using
+// the Ping method.
 func (g GeoPostgresDB) QueryStatus() error {
 	db, _ := sql.Open("postgres", g.Config.String())
 	defer db.Close()

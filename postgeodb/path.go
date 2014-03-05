@@ -1,4 +1,4 @@
-package geodb
+package postgeodb
 
 import (
 	"database/sql"
@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// Returns the distance in meters between all the edges in the array nodes,
+// such that an edge is for any index i (i, i+1), (i+1, i+2), and so on.
 func (g GeoPostgresDB) QueryDistance(nodes []int, country string) (int, error) {
 	if len(nodes) < 2 {
 		return 0, nil

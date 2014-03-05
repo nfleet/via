@@ -1,4 +1,4 @@
-package geodb
+package postgeodb
 
 import (
 	"database/sql"
