@@ -89,6 +89,9 @@ func main() {
 	web.Get("/dm/(.*)/result", server.GetMatrixResult)
 	web.Get("/dm/(.*)$", server.GetMatrix)
 	web.Post("/dm/", server.PostMatrix)
+	web.Get("/dmatrix/(.*)/result", server.GetMatrixResult)
+	web.Get("/dmatrix/(.*)$", server.GetMatrix)
+	web.Post("/dmatrix/", server.PostMatrix)
 
 	// Path
 	web.Post("/paths", server.PostCoordinatePaths)
