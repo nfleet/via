@@ -7,8 +7,8 @@ import (
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
-	"github.com/nfleet/via/geodb"
 	"github.com/nfleet/via/geotypes"
+	"github.com/nfleet/via/postgeodb"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/bmizerany/pq"
@@ -23,7 +23,7 @@ type (
 )
 
 const (
-	expiry int64 = 3600
+	expiry int = 3600
 )
 
 var (
@@ -76,8 +76,8 @@ func main() {
 		return
 	}
 
-	geoDB := geodb.GeoPostgresDB{Config: config}
-	geo := geo.NewGeo(Debug, geoDB)
+	geoDB := postgeodb.GeoPostgresDB{Config: config}
+	geo := geo.NewGeo(Debug, geoDB, expiry)
 
 	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
