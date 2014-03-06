@@ -226,9 +226,6 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	} else {
 		for i := 0; i < len(locations); i++ {
 			newLoc, err := server.Geo.ResolveLocation(locations[i])
-			if err != nil {
-				ctx.Abort(422, "Resolvation failure: "+err.Error())
-			}
 			resolvedLocations = append(resolvedLocations, newLoc)
 		}
 	}
