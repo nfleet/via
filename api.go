@@ -225,7 +225,7 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
-			newLoc, err := server.Geo.ResolveLocation(locations[i])
+			newLoc, _ := server.Geo.ResolveLocation(locations[i])
 			resolvedLocations = append(resolvedLocations, newLoc)
 		}
 	}
