@@ -14,7 +14,7 @@ func (g GeoPostgresDB) QueryDistance(nodes []int, country string) (int, error) {
 		return 0, nil
 	}
 
-	db := g.db
+	db := g.DB
 
 	var edgePairs []string
 

@@ -11,7 +11,7 @@ import (
 
 // Returns the fixed Location DTO for the Address, i.e. geocodes the Address and returns count results.
 func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([]geotypes.Location, error) {
-	db := g.db
+	db := g.DB
 
 	country_funcs := map[string]string{
 		"finland": "get_appr2",

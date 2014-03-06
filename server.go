@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
@@ -62,6 +64,18 @@ func main() {
 
 	var config geotypes.Config
 	var configFile string
+	var geoDB *postgeodb.GeoPostgresDB
+
+	// Handle SIGINT and SIGKILL
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+	go func() {
+		for sig := range c {
+			log.Printf("received %v, closing database connections and exiting...", sig)
+			geoDB.DB.Close()
+			os.Exit(1)
+		}
+	}()
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -78,12 +92,11 @@ func main() {
 	}
 
 	log.Print("establishing database connection... ")
-	geoDB, err := postgeodb.NewGeoPostgresDB(config)
+	geoDB, err = postgeodb.NewGeoPostgresDB(config)
 	if err != nil {
 		log.Println("error: " + err.Error())
 		return
 	}
-	defer geoDB.db.Close()
 
 	log.Println("starting server...")
 
