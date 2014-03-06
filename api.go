@@ -214,6 +214,8 @@ func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
 }
 
 func (server *Server) PostResolve(ctx *web.Context) string {
+	ctx.Header().Set("Access-Control-Allow-Origin", "*")
+	ctx.ContentType("application/json")
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 	var locations, resolvedLocations []geotypes.Location
 
@@ -236,7 +238,5 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		ctx.Abort(500, err.Error())
 	}
 
-	ctx.Header().Set("Access-Control-Allow-Origin", "*")
-	ctx.ContentType("application/json")
 	return string(res)
 }
