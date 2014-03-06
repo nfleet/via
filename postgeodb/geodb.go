@@ -15,7 +15,7 @@ var table_names = map[string]string{
 }
 
 type GeoPostgresDB struct {
-	db     *sql.DB
+	DB     *sql.DB
 	Config geotypes.Config
 }
 
@@ -34,7 +34,7 @@ func NewGeoPostgresDB(config geotypes.Config) (*GeoPostgresDB, error) {
 // Returns the status of the server, tests the connection using
 // the Ping method.
 func (g GeoPostgresDB) QueryStatus() error {
-	err := g.db.Ping()
+	err := g.DB.Ping()
 
 	if err != nil {
 		return err

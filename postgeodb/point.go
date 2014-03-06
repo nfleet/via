@@ -11,7 +11,7 @@ import (
 
 // Returns the closest point of point in the graph database, returns the node ID and its coordinates.
 func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (geotypes.CHNode, error) {
-	db := g.db
+	db := g.DB
 
 	var (
 		lat, long float64
@@ -36,7 +36,7 @@ func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (
 // Many-to-many inverse of QueryClosestPoint, returns the coordinates corresponding to the graph nodes. Used
 // mostly for rendering paths.
 func (g GeoPostgresDB) QueryCoordinates(nodes []int, country string) ([]geotypes.Coord, error) {
-	db := g.db
+	db := g.DB
 
 	query := `
 SELECT n.coord[0], n.coord[1]
