@@ -54,8 +54,10 @@ func TestCalculatePathsWithoutCoordinates(t *testing.T) {
 	}
 
 	t.Logf("Finland (%d edges) ok.", len(noCoordsFinland))
+}
 
-	_, err = test_geo.CalculateCoordinatePaths(geotypes.PathsInput{100, coordsGermany})
+func TestCalculatePathsWithCoordinates(t *testing.T) {
+	_, err := test_geo.CalculateCoordinatePaths(geotypes.PathsInput{100, coordsGermany})
 
 	if err != nil {
 		t.Fatal(err)

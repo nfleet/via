@@ -78,11 +78,12 @@ func main() {
 	}
 
 	log.Print("establishing database connection... ")
-	geoDB := postgeodb.GeoPostgresDB{Config: config}
-	if err := geoDB.QueryStatus(); err != nil {
+	geoDB, err := postgeodb.NewGeoPostgresDB(config)
+	if err != nil {
 		log.Println("error: " + err.Error())
 		return
 	}
+	defer geoDB.db.Close()
 
 	log.Println("starting server...")
 

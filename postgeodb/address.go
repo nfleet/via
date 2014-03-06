@@ -1,7 +1,6 @@
 package postgeodb
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,14 +11,7 @@ import (
 
 // Returns the fixed Location DTO for the Address, i.e. geocodes the Address and returns count results.
 func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([]geotypes.Location, error) {
-	newconf := geotypes.Config(g.Config)
-	newconf.DbName = "trgm_test"
-
-	db, err := sql.Open("postgres", newconf.String())
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
+	db := g.db
 
 	country_funcs := map[string]string{
 		"finland": "get_appr2",
