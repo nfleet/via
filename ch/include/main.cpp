@@ -24,9 +24,10 @@ int main()
 
 
 	//jsonInput = "{\"source\":" + jsonInput_s + ",\"target\":" + jsonInput_t + "}";
-	jsonInput = "[{\"source\":164932,\"target\":671334},{\"source\":634791,\"target\":419348},{\"source\":419348,\"target\":761772}]";
+	//jsonInput = "[{\"source\":164932,\"target\":671334},{\"source\":634791,\"target\":419348},{\"source\":419348,\"target\":761772}]";
+        jsonInput = "{ \"sources\": [291068,592850,777848,756365,847393]}";
     cout<<jsonInput<<endl;
 	EdgeWeight path_len;
 	EdgeID num_edges;
-	cout<<calc_paths((char *)jsonInput.c_str(),"finland",100);
+	cout<<calc_dm(jsonInput,"finland",100);
 }
