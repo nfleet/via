@@ -14,8 +14,7 @@ func (g GeoPostgresDB) QueryDistance(nodes []int, country string) (int, error) {
 		return 0, nil
 	}
 
-	db, _ := sql.Open("postgres", g.Config.String())
-	defer db.Close()
+	db := g.db
 
 	var edgePairs []string
 

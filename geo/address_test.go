@@ -13,13 +13,19 @@ var locations = []geotypes.Location{
 
 func BenchmarkAddressFinlandResolvation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		test_geo.ResolveLocation(locations[0])
+		_, err := test_geo.ResolveLocation(locations[0])
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkAddressGermanyResolvation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		test_geo.ResolveLocation(locations[1])
+		_, err := test_geo.ResolveLocation(locations[1])
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 

@@ -11,11 +11,7 @@ import (
 
 // Returns the closest point of point in the graph database, returns the node ID and its coordinates.
 func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (geotypes.CHNode, error) {
-	db, err := sql.Open("postgres", g.Config.String())
-	if err != nil {
-		return geotypes.CHNode{}, err
-	}
-	defer db.Close()
+	db := g.db
 
 	var (
 		lat, long float64
@@ -24,7 +20,7 @@ func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (
 
 	q := fmt.Sprintf("SELECT id, coord[0], coord[1] FROM %s ORDER BY coord <-> point ('%.5f, %.5f') LIMIT 1",
 		table_names[country], point[0], point[1])
-	err = db.QueryRow(q).Scan(&id, &lat, &long)
+	err := db.QueryRow(q).Scan(&id, &lat, &long)
 
 	switch {
 	case err == sql.ErrNoRows:
@@ -40,11 +36,7 @@ func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (
 // Many-to-many inverse of QueryClosestPoint, returns the coordinates corresponding to the graph nodes. Used
 // mostly for rendering paths.
 func (g GeoPostgresDB) QueryCoordinates(nodes []int, country string) ([]geotypes.Coord, error) {
-	db, err := sql.Open("postgres", g.Config.String())
-	if err != nil {
-		return []geotypes.Coord{}, err
-	}
-	defer db.Close()
+	db := g.db
 
 	query := `
 SELECT n.coord[0], n.coord[1]

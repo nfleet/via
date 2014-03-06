@@ -15,16 +15,26 @@ var table_names = map[string]string{
 }
 
 type GeoPostgresDB struct {
+	db     *sql.DB
 	Config geotypes.Config
+}
+
+func NewGeoPostgresDB(config geotypes.Config) (*GeoPostgresDB, error) {
+	geodb, err := sql.Open("postgres", config.String())
+
+	if err != nil {
+		return nil, err
+	}
+
+	g := GeoPostgresDB{geodb, config}
+
+	return &g, nil
 }
 
 // Returns the status of the server, tests the connection using
 // the Ping method.
 func (g GeoPostgresDB) QueryStatus() error {
-	db, _ := sql.Open("postgres", g.Config.String())
-	defer db.Close()
-
-	err := db.Ping()
+	err := g.db.Ping()
 
 	if err != nil {
 		return err
