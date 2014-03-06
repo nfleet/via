@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/hoisie/web"
@@ -69,14 +70,22 @@ func main() {
 		configFile = args[0]
 	}
 
-	fmt.Println("loading config from " + configFile)
+	log.Print("loading config from " + configFile + "... ")
 	config, err := geo.LoadConfig(configFile)
 	if err != nil {
-		fmt.Printf("configuration loading from %s failed: %s\n", configFile, err.Error())
+		log.Printf("failed: %s\n", configFile, err.Error())
 		return
 	}
 
+	log.Print("establishing database connection... ")
 	geoDB := postgeodb.GeoPostgresDB{Config: config}
+	if err := geoDB.QueryStatus(); err != nil {
+		log.Println("error: " + err.Error())
+		return
+	}
+
+	log.Println("starting server...")
+
 	geo := geo.NewGeo(Debug, geoDB, expiry)
 
 	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
