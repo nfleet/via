@@ -60,7 +60,7 @@ MyGraph* loadGraph(const string& filename)
   return graph;
 }
 
-const char* calc(char* json_data, const char* country, const int speed_profile)
+const char* calc_dm(char* json_data, const char* country, const int speed_profile)
 {
   rapidjson::Document d;
   LevelID earlyStopLevel = 10;
