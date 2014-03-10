@@ -6,7 +6,7 @@ import sys, time, simplejson
 import argparse
 import random
 
-endpoint = '/dm/'
+endpoint = '/spp/'
 root_url = 'localhost'
 PROTOCOL = 'http://'
 
@@ -75,7 +75,6 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
             resLoc = r.headers['location']
 
             new_url = "%s%s:%d%s" % (PROTOCOL, url, port, resLoc)
-            print new_url
 
             # start polling
             done = False
