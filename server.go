@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
@@ -66,17 +67,6 @@ func main() {
 	var configFile string
 	var geoDB *postgeodb.GeoPostgresDB
 
-	// Handle SIGINT and SIGKILL
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-	go func() {
-		for sig := range c {
-			log.Printf("received %v, closing database connections and exiting...", sig)
-			geoDB.DB.Close()
-			os.Exit(1)
-		}
-	}()
-
 	args := flag.Args()
 	if len(args) < 1 {
 		configFile = "production.json"
@@ -98,10 +88,23 @@ func main() {
 		return
 	}
 
-	log.Println("starting server...")
+	// Handle SIGINT and SIGKILL
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+	go func() {
+		for sig := range c {
+			log.Printf("received %v, closing database connections and exiting...", sig)
+			geoDB.DB.Close()
+			os.Exit(1)
+		}
+	}()
+
+	procs := runtime.NumCPU()
+	runtime.GOMAXPROCS(procs)
+
+	log.Printf("starting server, running on %d cores...", procs)
 
 	geo := geo.NewGeo(Debug, geoDB, expiry)
-
 	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic
