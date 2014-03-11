@@ -29,19 +29,25 @@ func BenchmarkAddressGermanyResolvation(b *testing.B) {
 	}
 }
 
-func TestResolvationForAddress(t *testing.T) {
-	for _, loc := range locations {
-		resolvedLoc, err := test_geo.ResolveLocation(loc)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if IsMissingCoordinate(resolvedLoc) {
-			t.Fatalf("Geocoding failed: %#v is missing coordinates", resolvedLoc)
-		}
-
-		t.Logf("Geocoded %v => %v", loc, resolvedLoc)
+func geocode(loc geotypes.Location, t *testing.T) {
+	resolvedLoc, err := test_geo.ResolveLocation(loc)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	if IsMissingCoordinate(resolvedLoc) {
+		t.Fatalf("Geocoding failed: %#v is missing coordinates", resolvedLoc)
+	}
+
+	t.Logf("Geocoded %v => %v", loc, resolvedLoc)
+}
+
+func TestResolvationForFinnishAddress(t *testing.T) {
+	geocode(locations[0], t)
+}
+
+func TestResolvationForGermanAddress(t *testing.T) {
+	geocode(locations[1], t)
 }
 
 func TestResolvationCoordinateFixing(t *testing.T) {
