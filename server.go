@@ -15,7 +15,7 @@ import (
 	"github.com/nfleet/via/postgeodb"
 
 	// register this postgres driver with the SQL module
-	_ "github.com/bmizerany/pq"
+	_ "github.com/lib/pq"
 )
 
 type (
