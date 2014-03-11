@@ -26,6 +26,11 @@ func NewGeoPostgresDB(config geotypes.Config) (*GeoPostgresDB, error) {
 		return nil, err
 	}
 
+	err = geodb.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	g := GeoPostgresDB{geodb, config}
 
 	return &g, nil

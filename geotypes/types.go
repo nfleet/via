@@ -4,9 +4,11 @@ import "fmt"
 
 type Config struct {
 	Port             int
+	SslMode          string
 	DbUser           string
 	DbName           string
 	DbHost           string
+	DbPort           int
 	DbPass           string
 	AllowedCountries map[string]bool
 }
@@ -100,7 +102,7 @@ type GeoDB interface {
 }
 
 func (config *Config) String() string {
-	s := fmt.Sprintf("sslmode=disable user=%s dbname=%s host=%s password=%s",
-		config.DbUser, config.DbName, config.DbHost, config.DbPass)
+	s := fmt.Sprintf("user=%s dbname=%s host=%s port=%d password=%s sslmode=%s",
+		config.DbUser, config.DbName, config.DbHost, config.DbPort, config.DbPass, config.SslMode)
 	return s
 }
