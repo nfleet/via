@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lib/pq"
 	"github.com/nfleet/via/geotypes"
 )
 
@@ -18,9 +19,9 @@ func (g GeoPostgresDB) QueryClosestPoint(point geotypes.Coord, country string) (
 		id        int
 	)
 
-	q := fmt.Sprintf("SELECT id, coord[0], coord[1] FROM %s ORDER BY coord <-> point ('%.5f, %.5f') LIMIT 1",
-		table_names[country], point[0], point[1])
-	err := db.QueryRow(q).Scan(&id, &lat, &long)
+	//q := "SELECT id, coord[0], coord[1] FROM $1 ORDER BY coord <-> point ('$2, $3') LIMIT 1"
+	err := db.QueryRow(fmt.Sprintf("SELECT id, coord[0], coord[1] FROM %s ORDER BY coord <-> point ($1, $2) LIMIT 1",
+		pq.QuoteIdentifier(table_names[country])), point[0], point[1]).Scan(&id, &lat, &long)
 
 	switch {
 	case err == sql.ErrNoRows:
