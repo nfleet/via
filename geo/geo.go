@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	_ "github.com/bmizerany/pq"
 	"github.com/hoisie/redis"
+	_ "github.com/lib/pq"
 	"github.com/nfleet/via/geotypes"
 )
 
