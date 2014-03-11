@@ -25,13 +25,14 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 			" not recognized")
 	}
 
-	q := fmt.Sprintf("SELECT id, coord, city, name, sml "+
-		"from %s('%s') WHERE city LIKE '%%%s%%'"+
-		"ORDER BY sml DESC LIMIT %d",
-		country_funcs[country],
-		address.Street, address.City, count)
-
-	rows, err := db.Query(q)
+	//	q := fmt.Sprintf("SELECT id, coord, city, name, sml "+
+	//		"from %s('%s') WHERE city LIKE '%$3%'"+
+	//		"ORDER BY sml DESC LIMIT %d",
+	//		country_funcs[country],
+	//		address.Street, address.City, count)
+	//
+	q := fmt.Sprintf("SELECT id, coord, city, name, sml from %s($1) WHERE city LIKE $2 ORDER BY sml DESC LIMIT $3", country_funcs[country])
+	rows, err := db.Query(q, address.Street, address.City, count)
 
 	if err != nil {
 		return []geotypes.Location{}, err
