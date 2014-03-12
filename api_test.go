@@ -50,8 +50,7 @@ func TestBoundingBoxes(t *testing.T) {
 }
 
 func api_test_resolve(t *testing.T, locations []geotypes.Location) {
-	//request := fmt.Sprintf("http://test-gis.nfleet.fi/resolve", testConfig.Port)
-	request := "http://test-gis.nfleet.fi/resolve"
+	request := fmt.Sprintf("http://localhost:%d/resolve", testConfig.Port)
 
 	jsonLoc, _ := json.Marshal(locations)
 	b := strings.NewReader(string(jsonLoc))
