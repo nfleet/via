@@ -134,7 +134,7 @@ func (g *Geo) ComputeMatrix(matrixHash string) {
 
 	// todo: use nodes
 	var res string
-	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile))
+	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile), g.DataDir)
 	// something weird might happen with rapidjson serialization - fix this
 	// case 1: missing }
 	if strings.Index(res, "}") == -1 {

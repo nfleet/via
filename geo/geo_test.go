@@ -9,7 +9,7 @@ import (
 var (
 	config, _  = LoadConfig("../development.json")
 	geoDB, err = postgeodb.NewGeoPostgresDB(config)
-	test_geo   = NewGeo(true, geoDB, 3600)
+	test_geo   = NewGeo(true, geoDB, 3600, config.DataDir)
 )
 
 func TestGeo(t *testing.T) {

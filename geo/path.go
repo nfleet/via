@@ -43,10 +43,7 @@ func (g *Geo) CalculatePaths(nodeEdges []geotypes.NodeEdge, country string, spee
 
 	country = strings.ToLower(country)
 
-	// WHY THE HELL IS THIS NECESSARY?
-	country += "\x00"
-
-	res := ch.Calc_paths(string(input_data), string(country), speed_profile)
+	res := ch.Calc_paths(string(input_data), country, speed_profile, g.DataDir)
 	res = g.CleanCppMessage(res)
 
 	if !strings.HasSuffix(res, "]}]}") {
