@@ -10,6 +10,7 @@ type Config struct {
 	DbHost           string
 	DbPort           int
 	DbPass           string
+	DataDir          string
 	AllowedCountries map[string]bool
 }
 

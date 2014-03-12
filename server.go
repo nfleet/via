@@ -83,7 +83,7 @@ func main() {
 
 	log.Print("establishing database connection... ")
 	geoDB, err = postgeodb.NewGeoPostgresDB(config)
-	if err != nil {
+	ifrr != nil {
 		log.Println("error: " + err.Error())
 		return
 	}
@@ -104,7 +104,7 @@ func main() {
 
 	log.Printf("starting server, running on %d cores...", procs)
 
-	geo := geo.NewGeo(Debug, geoDB, expiry)
+	geo := geo.NewGeo(Debug, geoDB, expiry, dataDir)
 	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic

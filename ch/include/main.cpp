@@ -29,5 +29,5 @@ int main()
     cout<<jsonInput<<endl;
 	EdgeWeight path_len;
 	EdgeID num_edges;
-	cout<<calc_dm(jsonInput,"finland",100);
+	cout<<calc_dm(jsonInput,"finland",100, "/var/lib/spp/ch/");
 }

@@ -23,7 +23,7 @@
 #define SERIALIZE_H
 
 
-#include <ext/hash_map>
+#include <boost/unordered_map.hpp>
 
 /** Writes a given primitive value (e.g. int, double) to the given stream. */
 template < typename value_type >
@@ -125,7 +125,7 @@ private:
     typedef PairSerializer< key_type, data_type,
                             PrimitiveSerializer<key_type>,
                             data_serializer > value_serializer;
-    typedef __gnu_cxx::hash_map<key_type, data_type> HashMap;
+    typedef boost::unordered_map<key_type, data_type> HashMap;
     
 public:
     static void serialize(ostream& out, const HashMap& hm) {

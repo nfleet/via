@@ -12,10 +12,11 @@ import (
 type debugging bool
 
 type Geo struct {
-	Debug  debugging
-	Expiry int
-	Client redis.Client
-	DB     geotypes.GeoDB
+	Debug   debugging
+	Expiry  int
+	DataDir string
+	Client  redis.Client
+	DB      geotypes.GeoDB
 }
 
 func LoadConfig(file string) (geotypes.Config, error) {
@@ -31,10 +32,11 @@ func LoadConfig(file string) (geotypes.Config, error) {
 	return config, nil
 }
 
-func NewGeo(debug bool, db geotypes.GeoDB, expiry int) *Geo {
+func NewGeo(debug bool, db geotypes.GeoDB, expiry int, dataDir string) *Geo {
 	return &Geo{
-		DB:     db,
-		Debug:  debugging(debug),
-		Expiry: expiry,
+		DB:      db,
+		Debug:   debugging(debug),
+		Expiry:  expiry,
+		DataDir: dataDir,
 	}
 }
