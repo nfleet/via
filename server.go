@@ -83,7 +83,7 @@ func main() {
 
 	log.Print("establishing database connection... ")
 	geoDB, err = postgeodb.NewGeoPostgresDB(config)
-	ifrr != nil {
+	if err != nil {
 		log.Println("error: " + err.Error())
 		return
 	}
