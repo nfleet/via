@@ -104,7 +104,7 @@ func main() {
 
 	log.Printf("starting server, running on %d cores...", procs)
 
-	geo := geo.NewGeo(Debug, geoDB, expiry, dataDir)
+	geo := geo.NewGeo(Debug, geoDB, expiry, config.DataDir)
 	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic
