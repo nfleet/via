@@ -31,7 +31,7 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 	//		country_funcs[country],
 	//		address.Street, address.City, count)
 	//
-	q := fmt.Sprintf("SELECT id, coord, city, name, sml from %s($1) WHERE city LIKE $2 ORDER BY sml DESC LIMIT $3", country_funcs[country])
+	q := fmt.Sprintf("SELECT id, coord, city, name, sml FROM %s($1) WHERE city LIKE '%%'||$2||'%%' ORDER BY sml DESC LIMIT $3", country_funcs[country])
 	rows, err := db.Query(q, address.Street, address.City, count)
 
 	if err != nil {
