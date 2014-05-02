@@ -89,8 +89,8 @@ func main() {
 		return
 	}
 
-	log.Print("connecting to redis... ")
 	client := redis.Client{Addr: config.RedisAddr, Password: config.RedisPass}
+	log.Printf("connecting to redis server at %s... ", client.Addr)
 	if _, err := client.Ping(); err != nil {
 		log.Println("error: ", err.Error())
 		return
