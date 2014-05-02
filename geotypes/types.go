@@ -11,6 +11,8 @@ type Config struct {
 	DbPort           int
 	DbPass           string
 	DataDir          string
+	RedisAddr        string
+	RedisPass        string
 	AllowedCountries map[string]bool
 }
 

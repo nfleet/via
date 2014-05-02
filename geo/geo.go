@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/hoisie/redis"
+	"github.com/ane/redis"
 	_ "github.com/lib/pq"
 	"github.com/nfleet/via/geotypes"
 )
@@ -32,9 +32,10 @@ func LoadConfig(file string) (geotypes.Config, error) {
 	return config, nil
 }
 
-func NewGeo(debug bool, db geotypes.GeoDB, expiry int, dataDir string) *Geo {
+func NewGeo(debug bool, db geotypes.GeoDB, redisClient redis.Client, expiry int, dataDir string) *Geo {
 	return &Geo{
 		DB:      db,
+		Client:  redisClient,
 		Debug:   debugging(debug),
 		Expiry:  expiry,
 		DataDir: dataDir,
