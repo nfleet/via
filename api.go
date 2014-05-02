@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"syscall"
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geo"
@@ -173,13 +174,22 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 }
 
 func (server *Server) GetServerStatus(ctx *web.Context) string {
-	err := server.Geo.DB.QueryStatus()
+	err_db := server.Geo.DB.QueryStatus()
 
-	if err == nil {
-		return "OK"
+	s := syscall.Statfs_t{}
+	syscall.Statfs("./", &s)
+	space := (uint64(s.Bsize) * s.Bavail) / 1000000000
+	err_disk := space < 2
+
+	if err_db != nil {
+		ctx.Abort(500, fmt.Sprintf("Database connection failure: %s\n", err_db.Error()))
+		return ""
+	} else if err_disk != false {
+		ctx.Abort(500, fmt.Sprintf("Disk space is below 2G!"))
+		return ""
 	}
 
-	return fmt.Sprintf("Could not connect to database: %s\n", err.Error())
+	return "OK"
 }
 
 func (server *Server) PostCoordinatePaths(ctx *web.Context) string {
