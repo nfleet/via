@@ -9,43 +9,41 @@ import (
 // Resolves a location from the database.
 // Returns 20 when everything fails (i.e. database problem), 30 when
 // an address could not be found or when the street wasn't supplied.
-func (g *Geo) ResolveLocation(location geotypes.Location) (geotypes.Location, error) {
+func (g *Geo) ResolveLocation(location geotypes.Location, limit int) ([]geotypes.Location, error) {
 	if IsMissingCoordinate(location) {
 		if location.Address.Street != "" {
-			locs, err := g.DB.QueryFuzzyAddress(location.Address, 1)
+			locs, err := g.DB.QueryFuzzyAddress(location.Address, limit)
 			if err != nil {
 				location.Address.Confidence = 20.0
-				return location, err
+				return []geotypes.Location{location}, err
 			}
 
 			if len(locs) == 0 {
 				location.Address.Confidence = 30.0
-				return location, nil
+				return []geotypes.Location{location}, nil
 			}
 
-			location.Coordinate = locs[0].Coordinate
-			location.Address = locs[0].Address
-			return location, nil
+			return locs, nil
 		} else {
 			// skip
 			location.Address.Confidence = 30.0
-			return location, nil
+			return []geotypes.Location{location}, nil
 		}
 	} else {
 		if location.Address.Country == "" {
-			return location, errors.New("Must provide country in Location.Address!")
+			return []geotypes.Location{location}, errors.New("Must provide country in Location.Address!")
 		}
 
 		coord := location.Coordinate
 		correctCoord, err := g.DB.QueryClosestPoint(geotypes.Coord{coord.Latitude, coord.Longitude}, location.Address.Country)
 
 		if err != nil {
-			return location, err
+			return []geotypes.Location{location}, err
 		}
 
 		location.Coordinate.Latitude = correctCoord.Coord[0]
 		location.Coordinate.Longitude = correctCoord.Coord[1]
 
-		return location, nil
+		return []geotypes.Location{location}, nil
 	}
 }

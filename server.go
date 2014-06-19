@@ -136,5 +136,5 @@ func main() {
 
 	web.Match("OPTIONS", "/(.*)", Options)
 
-	web.Run(fmt.Sprintf("127.0.0.1:%d", config.Port))
+	web.Run(fmt.Sprintf("%s:%d", config.Host, config.Port))
 }
