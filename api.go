@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"syscall"
 
 	"github.com/hoisie/web"
@@ -228,6 +229,18 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 	ctx.ContentType("application/json")
 	content, err := ioutil.ReadAll(ctx.Request.Body)
 	var locations, resolvedLocations []geotypes.Location
+	var l int
+
+	limit, has_limit := ctx.Params["limit"]
+	if !has_limit {
+		l = 1
+	} else {
+		l, err = strconv.Atoi(limit)
+		if err != nil {
+			ctx.Abort(400, fmt.Sprintf("Limit must be an integer, you gave '%s'.", limit))
+			return ""
+		}
+	}
 
 	// Parse params
 	if err := json.Unmarshal(content, &locations); err != nil {
@@ -235,8 +248,8 @@ func (server *Server) PostResolve(ctx *web.Context) string {
 		return ""
 	} else {
 		for i := 0; i < len(locations); i++ {
-			newLoc, _ := server.Geo.ResolveLocation(locations[i])
-			resolvedLocations = append(resolvedLocations, newLoc)
+			newLocs, _ := server.Geo.ResolveLocation(locations[i], l)
+			resolvedLocations = append(resolvedLocations, newLocs...)
 		}
 	}
 

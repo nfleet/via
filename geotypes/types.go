@@ -3,6 +3,7 @@ package geotypes
 import "fmt"
 
 type Config struct {
+	Host             string
 	Port             int
 	SslMode          string
 	DbUser           string
