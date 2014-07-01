@@ -1,4 +1,4 @@
-package geo
+package main
 
 import (
 	"bytes"
@@ -6,13 +6,13 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/nfleet/via/ch"
-	"github.com/nfleet/via/geotypes"
 )
 
 func CreateMatrixHash(matrixData, country string, speed_profile int) string {
@@ -28,8 +28,8 @@ func CreateMatrixHash(matrixData, country string, speed_profile int) string {
 // has not been parsed into JSON. Stores parsedData into Redis in binary format.
 // Returns the hash to be used with Redis and true whether a proxy resource was created,
 // false if the resource is new.
-func (g *Geo) CreateMatrixComputation(matrix []geotypes.Coord, country string, speed_profile int) (string, bool) {
-	c := g.Client
+func (v *Via) CreateMatrixComputation(matrix []int, ratiosHash, country string, speed_profile int) (string, bool) {
+	c := v.Client
 	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
 	// check if computation exists
 	if exists, _ := c.Exists(matrixHash); exists {
@@ -38,13 +38,14 @@ func (g *Geo) CreateMatrixComputation(matrix []geotypes.Coord, country string, s
 		c.Hset(newHash, "see", []byte(matrixHash))
 		ttl, _ := c.Ttl(matrixHash)
 		c.Expire(newHash, ttl)
-		g.Debug.Printf("Created proxy resource %s (expires in %d sec)", newHash, ttl)
+		v.Debug.Printf("Created proxy resource %s (expires in %d sec)", newHash, ttl)
 		return newHash, true
 	}
 
 	c.Hset(matrixHash, "progress", []byte("initializing"))
 	c.Hset(matrixHash, "result", []byte("0"))
 	c.Hset(matrixHash, "country", []byte(country))
+	c.Hset(matrixHash, "ratiosHash", []byte(ratiosHash))
 
 	bif := make([]byte, 8)
 	n := binary.PutVarint(bif, int64(speed_profile))
@@ -54,25 +55,25 @@ func (g *Geo) CreateMatrixComputation(matrix []geotypes.Coord, country string, s
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(matrix); err != nil {
-		g.Debug.Println("encode error", err)
+		v.Debug.Println("encode error", err)
 	}
 
 	c.Hset(matrixHash, "data", buf.Bytes())
-	c.Expire(matrixHash, int64(g.Expiry))
-	g.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, g.Expiry)
+	c.Expire(matrixHash, int64(v.Expiry))
+	v.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, v.Expiry)
 
 	return matrixHash, false
 }
 
 // Returns computation progress for the matrix identified by matrixHash.
-func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
-	c := g.Client
+func (v *Via) GetMatrixComputationProgress(matrixHash string) (string, error) {
+	c := v.Client
 	workingHash := matrixHash
 	if exists, _ := c.Exists(workingHash); !exists {
 		return "", errors.New("no matrix found for hash " + workingHash)
 	}
 	if exists, _ := c.Hexists(workingHash, "see"); exists {
-		g.Debug.Println("Resolving proxy")
+		v.Debug.Println("Resolving proxy")
 		pointer, _ := c.Hget(workingHash, "see")
 		workingHash = string(pointer)
 	}
@@ -81,26 +82,23 @@ func (g *Geo) GetMatrixComputationProgress(matrixHash string) (string, error) {
 }
 
 // Computes a matrix hash. This should be launched in a goroutine, not in the main thread.
-func (g *Geo) ComputeMatrix(matrixHash string) {
-	var coords []geotypes.Coord
-	rc := g.Client
+func (v *Via) ComputeMatrix(matrixHash string) {
+	var nodes []int
+	rc := v.Client
 	t0 := time.Now()
 
 	set_status := func(status string) {
-		g.Debug.Println(status)
+		v.Debug.Println(status)
 		rc.Hset(matrixHash, "progress", []byte(status))
 	}
 
 	// error handling
 	defer func() {
 		if r := recover(); r != nil {
-			g.Debug.Println("Recovered in Compute.", r)
+			v.Debug.Println("Recovered in Compute.", r)
 			set_status("error")
 		}
 	}()
-
-	// start with Geoindexing
-	set_status("Geoindexing")
 
 	data, err := rc.Hget(matrixHash, "data")
 	if err != nil {
@@ -111,47 +109,44 @@ func (g *Geo) ComputeMatrix(matrixHash string) {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 
-	if err := dec.Decode(&coords); err != nil {
+	if err := dec.Decode(&nodes); err != nil {
 		panic("decode error: " + err.Error())
 	}
 
 	country, _ := rc.Hget(matrixHash, "country")
 
-	nodes, err := g.RunGeoindexer(string(country), coords, 4)
-	if err != nil {
-		panic("Geoindex error:" + err.Error())
-	}
-
-	set_status("computing")
-	json_data, err := MatrixToJson(nodes)
+	matrixData := struct {
+		Sources []int `json:"sources"`
+	}{nodes}
+	json_data, err := json.Marshal(matrixData)
 	if err != nil {
 		panic("nodes to json error:" + err.Error())
 	}
 
 	speed_profile_raw, _ := rc.Hget(matrixHash, "speed_profile")
 	speed_profile, _ := binary.Varint(speed_profile_raw)
-	g.Debug.Println("got country", string(country), "with profile", speed_profile)
+	v.Debug.Println("got country", string(country), "with profile", speed_profile)
 
+	set_status("computing")
 	// todo: use nodes
 	var res string
-	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile), g.DataDir)
+	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile), v.DataDir)
 	// something weird might happen with rapidjson serialization - fix this
 	// case 1: missing }
 	if strings.Index(res, "}") == -1 {
 		res = res + "}"
-		g.Debug.Println("brace missing")
+		v.Debug.Println("brace missing")
 	} else if strings.Index(res, "}") != len(res)-1 {
 		braceIndex := strings.Index(res, "}")
 		//junk := res[braceIndex+1:]
 		res = res[:braceIndex+1]
-		//g.Debug.Printf("Stripped extra data: %s", junk)
 	}
 
 	rc.Hset(matrixHash, "result", []byte(res))
 	res = ""
 
 	t1 := time.Since(t0)
-	g.Debug.Println("calculated matrix in", t1)
+	v.Debug.Println("calculated matrix in", t1)
 
 	set_status("complete")
 }

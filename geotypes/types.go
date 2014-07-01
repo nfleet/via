@@ -24,7 +24,7 @@ type CHNode struct {
 
 type Coord []float64
 
-type debugging bool
+type Debugging bool
 
 type Coordinate struct {
 	Latitude  float64
@@ -78,6 +78,13 @@ type CoordinatePath struct {
 
 type Matrix struct {
 	Nodes []int `json:"sources"`
+}
+
+type Ratio struct {
+	Id1, Id2, Dist40, Dist60, Dist80, Dist100, Dist120 int
+	Ratio, Distance                                    float64
+	Oneway                                             bool
+	Coord                                              Coord
 }
 
 // GeoDB implements a database abstraction layer that hides all

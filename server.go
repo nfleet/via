@@ -8,12 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/ane/redis"
 	"github.com/hoisie/web"
-	"github.com/nfleet/via/geo"
-	"github.com/nfleet/via/geotypes"
-	"github.com/nfleet/via/postgeodb"
 
 	// register this postgres driver with the SQL module
 	_ "github.com/lib/pq"
@@ -21,8 +19,9 @@ import (
 
 type (
 	Server struct {
-		Geo              *geo.Geo
+		Via              *Via
 		AllowedCountries map[string]bool
+		Host             string
 		Port             int
 	}
 )
@@ -64,9 +63,8 @@ func Options(ctx *web.Context, route string) string {
 func main() {
 	parse_flags()
 
-	var config geotypes.Config
+	var config ViaConfig
 	var configFile string
-	var geoDB *postgeodb.GeoPostgresDB
 
 	args := flag.Args()
 	if len(args) < 1 {
@@ -76,16 +74,9 @@ func main() {
 	}
 
 	log.Print("loading config from " + configFile + "... ")
-	config, err := geo.LoadConfig(configFile)
+	config, err := LoadConfig(configFile)
 	if err != nil {
 		log.Printf("failed: %s\n", configFile, err.Error())
-		return
-	}
-
-	log.Print("establishing database connection... ")
-	geoDB, err = postgeodb.NewGeoPostgresDB(config)
-	if err != nil {
-		log.Println("error: " + err.Error())
 		return
 	}
 
@@ -98,11 +89,10 @@ func main() {
 
 	// Handle SIGINT and SIGKILL
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
+	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGABRT)
 	go func() {
 		for sig := range c {
-			log.Printf("received %v, closing database connections and exiting...", sig)
-			geoDB.DB.Close()
+			log.Printf("received %v, exiting...", sig)
 			os.Exit(1)
 		}
 	}()
@@ -112,27 +102,20 @@ func main() {
 
 	log.Printf("starting server, running on %d cores...", procs)
 
-	geo := geo.NewGeo(Debug, geoDB, client, expiry, config.DataDir)
-	server := Server{Geo: geo, Port: config.Port, AllowedCountries: config.AllowedCountries}
+	via := NewVia(Debug, client, expiry, config.DataDir)
+	server := Server{Via: via, Host: config.Host, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic
 	web.Get("/", Splash)
 	web.Get("/status", server.GetServerStatus)
 
 	// Dmatrix
-	web.Get("/dm/(.*)/result", server.GetMatrixResult)
-	web.Get("/dm/(.*)$", server.GetMatrix)
-	web.Post("/dm/", server.PostMatrix)
-	web.Get("/spp/(.*)/result", server.GetMatrixResult)
-	web.Get("/spp/(.*)$", server.GetMatrix)
-	web.Post("/spp/", server.PostMatrix)
+	web.Get("/matrix/(.*)/result", server.GetMatrixResult)
+	web.Get("/matrix/(.*)$", server.GetMatrix)
+	web.Post("/matrix/", server.PostMatrix)
 
 	// Path
-	web.Post("/paths", server.PostCoordinatePaths)
-	web.Post("/cpaths", server.PostCoordinatePaths)
-
-	// Address/Coordinate
-	web.Post("/resolve", server.PostResolve)
+	web.Post("/paths", server.PostPaths)
 
 	web.Match("OPTIONS", "/(.*)", Options)
 
