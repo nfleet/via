@@ -76,18 +76,18 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 
 	for rows.Next() {
 		var (
-			coord, street_name, city string
-			real_coord               GeoPoint
-			house_num, id            int
-			conf                     float64
+			coord, street_name, s_city string
+			real_coord                 GeoPoint
+			house_num, id              int
+			conf                       float64
 		)
 
 		if country == "finland" {
-			if err := rows.Scan(&id, &house_num, &real_coord, &city, &street_name, &conf); err != nil {
+			if err := rows.Scan(&id, &house_num, &real_coord, &s_city, &street_name, &conf); err != nil {
 				return []geotypes.Location{}, err
 			}
 		} else {
-			if err := rows.Scan(&id, &coord, &city, &street_name, &conf); err != nil {
+			if err := rows.Scan(&id, &coord, &s_city, &street_name, &conf); err != nil {
 				return []geotypes.Location{}, err
 			}
 		}
@@ -116,7 +116,11 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 			h = address.HouseNumber
 		}
 
-		locations = append(locations, geotypes.Location{geotypes.Address{HouseNumber: h, Street: street_name, Country: upperFirst(country), City: city, Confidence: conf * 100}, geotypes.Coordinate{Latitude: coordinate[0], Longitude: coordinate[1], System: "WGS84"}})
+		if city != strings.ToLower(s_city) {
+			conf = 0.4
+		}
+
+		locations = append(locations, geotypes.Location{geotypes.Address{HouseNumber: h, Street: street_name, Country: upperFirst(country), City: s_city, Confidence: conf * 100}, geotypes.Coordinate{Latitude: coordinate[0], Longitude: coordinate[1], System: "WGS84"}})
 	}
 
 	if err := rows.Err(); err != nil {

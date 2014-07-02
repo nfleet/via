@@ -10,6 +10,7 @@ var locations = []geotypes.Location{
 	{Address: geotypes.Address{City: "Helsinki", HouseNumber: 28, Street: "Mechelininkatu", Country: "finland"}},
 	{Address: geotypes.Address{City: "Jyväskylä", HouseNumber: 9, Street: "Taitoniekantie", Country: "finland"}},
 	{Address: geotypes.Address{City: "Jyväskylä", HouseNumber: 0, Street: "Taitoniekantie", Country: "finland"}},
+	{Address: geotypes.Address{City: "Kuusankoski", HouseNumber: 0, Street: "Sepäntie", Country: "finland"}},
 }
 
 var germany = []geotypes.Location{
@@ -46,7 +47,7 @@ func geocode(loc geotypes.Location, t *testing.T) {
 		t.Fatalf("Geocoding failed: %#v is missing coordinates", resolvedLoc)
 	}
 
-	t.Logf("Geocoded %v => %v", loc, resolvedLoc)
+	t.Logf("Geocoded %#v => %#v", loc, resolvedLoc)
 }
 
 func TestResolvationForFinnishAddress(t *testing.T) {
