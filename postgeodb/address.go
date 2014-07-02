@@ -68,10 +68,10 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 
 	for rows.Next() {
 		var (
-			coord, street_name, city             string
-			real_coord                           GeoPoint
-			house_num, id, last_left, last_right int
-			conf                                 float64
+			coord, street_name, city string
+			real_coord               GeoPoint
+			house_num, id            int
+			conf                     float64
 		)
 
 		if country == "finland" {

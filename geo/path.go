@@ -69,22 +69,24 @@ func (g *Geo) CalculateCoordinatePaths(input geotypes.PathsInput) ([]geotypes.Co
 
 		if IsMissingCoordinate(edge.Source) {
 			var err error
-			source, err = g.ResolveLocation(edge.Source)
-			source.Address.Country = edge.Source.Address.Country
+			locs, err := g.ResolveLocation(edge.Source, 1)
 			if err != nil {
 				return []geotypes.CoordinatePath{}, err
 			}
+			source = locs[0]
+			source.Address.Country = edge.Source.Address.Country
 		} else {
 			source = edge.Source
 		}
 
 		if IsMissingCoordinate(edge.Target) {
 			var err error
-			target, err = g.ResolveLocation(edge.Target)
-			target.Address.Country = edge.Target.Address.Country
+			locs, err := g.ResolveLocation(edge.Target, 1)
 			if err != nil {
 				return []geotypes.CoordinatePath{}, err
 			}
+			target = locs[0]
+			target.Address.Country = edge.Target.Address.Country
 		} else {
 			target = edge.Target
 		}
