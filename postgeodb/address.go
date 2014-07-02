@@ -1,6 +1,7 @@
 package postgeodb
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -57,8 +58,15 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 		return []geotypes.Location{}, errors.New("Country " + country + " not recognized")
 	}
 
-	q := fmt.Sprintf("SELECT id, house_numbers, coord, city, name, sml FROM %s($1, $2) LIMIT $3", country_funcs[country])
-	rows, err := db.Query(q, street, city, count)
+	var rows *sql.Rows
+	var err error
+	if country == "finland" {
+		q := fmt.Sprintf("SELECT id, house_numbers, coord, city, name, sml FROM %s($1, $2) LIMIT $3", country_funcs[country])
+		rows, err = db.Query(q, street, city, count)
+	} else if country == "germany" {
+		q := fmt.Sprintf("SELECT id, coord, city, name, sml FROM %s($1) WHERE city LIKE '%%'||$2||'%%' ORDER BY sml DESC LIMIT $3", country_funcs[country])
+		rows, err = db.Query(q, address.Street, address.City, count)
+	}
 
 	if err != nil {
 		return []geotypes.Location{}, err
@@ -92,7 +100,7 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 
 			if house_num == 2 && address.HouseNumber != 0 {
 				var c GeoPoint
-				q = "SELECT get_house_number FROM get_house_number($1, $2)"
+				q := "SELECT get_house_number FROM get_house_number($1, $2)"
 				row := db.QueryRow(q, id, address.HouseNumber)
 				if err := row.Scan(&c); err != nil {
 					return []geotypes.Location{}, err

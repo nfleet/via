@@ -10,7 +10,10 @@ var locations = []geotypes.Location{
 	{Address: geotypes.Address{City: "Helsinki", HouseNumber: 28, Street: "Mechelininkatu", Country: "finland"}},
 	{Address: geotypes.Address{City: "Jyväskylä", HouseNumber: 9, Street: "Taitoniekantie", Country: "finland"}},
 	{Address: geotypes.Address{City: "Jyväskylä", HouseNumber: 0, Street: "Taitoniekantie", Country: "finland"}},
-	//{Address: geotypes.Address{City: "Stuttgart", Street: "Calwer Straße", Country: "germany"}},
+}
+
+var germany = []geotypes.Location{
+	{Address: geotypes.Address{City: "Stuttgart", Street: "Calwer Straße", Country: "germany"}},
 }
 
 func BenchmarkAddressFinlandResolvation(b *testing.B) {
@@ -53,7 +56,9 @@ func TestResolvationForFinnishAddress(t *testing.T) {
 }
 
 func TestResolvationForGermanAddress(t *testing.T) {
-	geocode(locations[1], t)
+	for _, loc := range germany {
+		geocode(loc, t)
+	}
 }
 
 func TestResolvationCoordinateFixing(t *testing.T) {
