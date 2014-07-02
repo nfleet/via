@@ -108,9 +108,7 @@ func (g GeoPostgresDB) QueryFuzzyAddress(address geotypes.Address, count int) ([
 				coordinate = [2]float64{c.Lat, c.Lng}
 			}
 		} else if country == "germany" {
-			var lat, long float64
-			fmt.Sscanf(coord, "(%f,%f)", &lat, &long)
-			coordinate[0], coordinate[1] = long, lat
+			fmt.Sscanf(coord, "(%f,%f)", &coordinate[0], &coordinate[1])
 		}
 
 		var h int
