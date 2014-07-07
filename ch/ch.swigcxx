@@ -1,9 +1,9 @@
 %module ch
+
 %include <std_string.i>
-%inline %{
- #include "include/ch.h"
- extern const std::string calc_dm(const std::string& json_data, const std::string& country, const int speed_profile, const std::string& dataDir);
- extern const std::string calc_dm_par(const std::string& json_data, const std::string& country, const int speed_profile);
- extern const std::string calc_paths(const std::string& json_data, const std::string& country, const int speed_profile, const std::string& dataDir);
+
+%{
+#include "ch.h"
 %}
 
+%include "ch.h"
