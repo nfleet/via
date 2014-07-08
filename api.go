@@ -52,7 +52,6 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 	country := strings.ToLower(paramBlob.Country)
 	sp := int(paramBlob.SpeedProfile)
 
-	fmt.Println(paramBlob)
 	ok := len(data) > 0 && country != "" && sp > 0
 	if ok {
 		// Sanitize speed profile.
@@ -85,6 +84,13 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 	ctx.Redirect(201, loc)
 }
 
+type Result struct {
+	Progress     string           `json:"progress"`
+	Matrix       map[string][]int `json:"matrix"`
+	SpeedProfile int              `json:"speed_profile"`
+	RatiosHash   string           `json:"ratios_hash"`
+}
+
 // Returns a computation from the server as identified by the resource parameter
 // in GET.
 func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
@@ -94,14 +100,17 @@ func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 		return ""
 	}
 
+	fmt.Println(progress)
+
 	if progress == "complete" {
 		url := fmt.Sprintf("/matrix/%s/result", resource)
 		server.Via.Debug.Println("redirect ->", url)
 		ctx.Redirect(303, url)
 	} else {
 		ctx.ContentType("json")
-		msg := fmt.Sprintf(`{ "progress": "%s" }`, progress)
-		return msg
+		result := Result{Progress: progress, Matrix: map[string][]int{}}
+		msg, _ := json.Marshal(result)
+		return string(msg)
 	}
 
 	return ""
@@ -114,6 +123,10 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 	}
 
 	progress, err := server.Via.GetMatrixComputationProgress(resource)
+	if err != nil {
+		ctx.Abort(403, err.Error())
+	}
+
 	if progress != "complete" {
 		ctx.Abort(403, "Computation is not ready yet.")
 		return ""
@@ -147,8 +160,15 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 
 	if data != nil {
 		ctx.ContentType("json")
-		return fmt.Sprintf("{ \"Matrix\": %s, \"RatiosHash\": \"%s\", \"SpeedProfile\": %d }",
-			string(data), string(ratios), speed_profile)
+		var mat map[string][]int
+		if err := json.Unmarshal(data, &mat); err != nil {
+			ctx.Abort(500, "Could not parse json matrix from ch: "+err.Error())
+			return ""
+		}
+
+		result := Result{Progress: "complete", Matrix: mat, RatiosHash: string(ratios), SpeedProfile: int(speed_profile)}
+		str, _ := json.Marshal(result)
+		return string(str)
 	}
 
 	return ""

@@ -77,7 +77,10 @@ func (v *Via) GetMatrixComputationProgress(matrixHash string) (string, error) {
 		pointer, _ := c.Hget(workingHash, "see")
 		workingHash = string(pointer)
 	}
-	progress, _ := c.Hget(workingHash, "progress")
+	progress, err := c.Hget(workingHash, "progress")
+	if err != nil {
+		return "", fmt.Errorf("The requested %s resource is not a matrix resource.", matrixHash)
+	}
 	return string(progress), nil
 }
 
