@@ -10,25 +10,22 @@ Installing via
 
 To compile via, first install the following:
 
-  * rapidjson (https://code.google.com/p/rapidjson/)
-  * Go development version from source (https://code.google.com/p/go/)
-  * SWIG 2.0.11
+  * rapidjson 0.11 (https://code.google.com/p/rapidjson/)
+  * boost C++ libraries
+  * Go 1.3
+  * Redis
+  * SWIG 3.0.2
 
 Once those are taken care of, simply run:
 
     go get -u github.com/nfleet/via/
 
-Then copy the ``development.json`` configuration files, modify it accordingly, and simply call it by running ``via``.
+Then copy the ``config_template.json`` configuration files, modify it accordingly, and simply call it by running ``via <config_file>``. Once you've established that via works, you need to figure out a way to send contraction hierarchies node data to the service. 
 
 Performance
 -----------
 
 On an Amazon EC2 large instance with two cores, current benchmarks give about 5 seconds for a 1000x1000 distance matrix using the German road network, which is the largest and densest in Europe (ca. 100 million graph nodes).
-
-Documentation
--------------
-
-API documentation will be available soon.
 
 Acknowledgements
 ----------------
@@ -37,15 +34,6 @@ Acknowledgements
 >   *- Isaac Newton*
 
 via includes source code of the contraction hierarchies project, see [here](http://algo2.iti.kit.edu/routeplanning.php) for more information, which is also licensed under the AGPL.
-
-Requirements
-------------
-
-* Go development version
-* Redis for fast key-value storage
-* Swig 2.0.11 for C++ wrapping
-* PostgreSQL 
-* Preprocessed OpenStreetMap data using contraction hierarchies. *We do not currently provide these, but instructions on how to compile them yourself will be given in the future.*
 
 About
 -----
