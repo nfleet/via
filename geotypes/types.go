@@ -43,6 +43,7 @@ type Address struct {
 	ApartmentNumber int
 	City            string
 	Confidence      float64
+	Resolution      int
 	Country         string
 	HouseNumber     int
 	PostalCode      string
@@ -65,6 +66,11 @@ type NodeEdge struct {
 	Target int `json:"target"`
 }
 
+type DistanceNodeEdge struct {
+	Distance int
+	NodeEdge
+}
+
 type PathsInput struct {
 	SpeedProfile int
 	Edges        []Edge
@@ -74,6 +80,7 @@ type CoordinatePath struct {
 	Distance int     `json:"distance"`
 	Time     int     `json:"time"`
 	Coords   []Coord `json:"coords"`
+	SameRoad bool    `json:"-""`
 }
 
 type Matrix struct {

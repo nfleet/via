@@ -6,7 +6,7 @@ import sys, time, simplejson
 import argparse
 import random
 
-endpoint = '/matrix/'
+endpoint = '/spp/'
 root_url = 'localhost'
 PROTOCOL = 'http://'
 
@@ -48,7 +48,7 @@ def create_matrix(matrix_dim):
     output(1, Fore.CYAN + "%dx%d matrix created in %ss. " % (matrix_dim, matrix_dim, str(now_calc)) + Fore.RESET)
     return src
 
-def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, print_res, constant_matrix, showmat, matrix=None, url=None,port=80, input_mat=None):
+def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, print_res, constant_matrix, showmat, matrix=None, url=None,port=80):
     output(1, "Performing " + Fore.MAGENTA + str(n) + Fore.RESET + " tests.")
     output(1, Fore.YELLOW + "Timeout set to %d seconds." % time_out + Fore.RESET)
     output(1, "Selected " + Fore.CYAN + "%s" % country + Fore.RESET + " as country.")
@@ -56,15 +56,12 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
     succ, fail, reqfail = 0, 0, 0
     src = None
     for i in range(n_tests):
-        if type(matrix) == str:
-            matrix = json.loads(matrix)
-
         # nested ternary... I'm going to hell for this!
         src = matrix if matrix != None else (create_matrix(matrix_dim) if src == None or not constant_matrix else src)
         if showmat:
             output(0, ">>> " + str(src))
 
-        payload = { 'matrix': str(src) if 'nfleet' in url else src, 'country': target_country, 'speed_profile': speed_profile }
+        payload = { 'matrix': str(src), 'country': target_country, 'speed_profile': speed_profile }
 
         # post
         burl = "%s%s:%d%s" % (PROTOCOL, url, port, endpoint)
@@ -78,6 +75,7 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
             resLoc = r.headers['location']
 
             new_url = "%s%s:%d%s" % (PROTOCOL, url, port, resLoc)
+            print new_url
 
             # start polling
             done = False
@@ -86,24 +84,29 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
             sys.stdout.flush()
             i = 0
             while not done:
-                poll_req = requests.get(new_url)
-                if poll_req.status_code == 502 or poll_req.status_code == 500:
-                    output(0, "%d" % poll_req.status_code)
-                    output(0, "ACHTUNG! Server error... " + Fore.RED + "HALT!")
-                    output(0, poll_req.text)
-                    sys.exit(-1)
-                res = poll_req.json()
-                if poll_req.status_code == 200 and 'Matrix' in res:
+                poll_req = requests.get(new_url, allow_redirects=False)
+                if poll_req.status_code == 303:
                     done = True
-                elif 'progress' in res:
-                    progress = res['progress']               
+                    break
+                elif poll_req.status_code == 502:
+                    output(0, "%d" % poll_req.status_code)
+                    output(0, "ACHTUNG! Server down... " + Fore.RED + "HALT!")
+                    sys.exit(-1)
+                try:
+                    res = poll_req.json()
+                    progress = res['progress']
                     output(1, "%s... " % progress, False)
-                sys.stdout.flush()
+                    sys.stdout.flush()
+                except simplejson.scanner.JSONDecodeError, e:
+                    print(e)
                 time.sleep(1)
 
             output(1, " done.")
+
+            assert('location' in poll_req.headers and poll_req.status_code == 303)
             
-            result_req = poll_req
+            result_url = "%s%s:%d%s" % (PROTOCOL, url, port, poll_req.headers['location'])
+            result_req = requests.get(result_url)
             if result_req.status_code == 200:
                 try:
                     now_req = time.time() - now_req
@@ -125,7 +128,7 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
                 succ += 1
         else:
             now_req = time.time() - now_req
-            output(0, Fore.MAGENTA + "HTTP %d " % r.status_code + r.text + " " + Fore.YELLOW +  str(now_req) + "s. TIMEOUT." + Fore.RESET)
+            output(0, Fore.MAGENTA + "HTTP %d " % r.status_code + r.text[:30] + " [...] " + Fore.YELLOW +  str(now_req) + "s. TIMEOUT." + Fore.RESET)
             reqfail += 1
     done = time.time() - c
 
