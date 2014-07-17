@@ -7,8 +7,8 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -70,7 +70,7 @@ func (v *Via) GetMatrixComputationProgress(matrixHash string) (string, error) {
 	c := v.Client
 	workingHash := matrixHash
 	if exists, _ := c.Exists(workingHash); !exists {
-		return "", errors.New("no matrix found for hash " + workingHash)
+		return "", fmt.Errorf("No matrix found for hash %s. It is likely the resource has expired. I recommend posting a new matrix.")
 	}
 	if exists, _ := c.Hexists(workingHash, "see"); exists {
 		v.Debug.Println("Resolving proxy")
@@ -89,6 +89,10 @@ func (v *Via) ComputeMatrix(matrixHash string) {
 	var nodes []int
 	rc := v.Client
 	t0 := time.Now()
+
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	v.Debug.Printf("entering ComputeMatrix for hash %s. memory used: %d mb.", matrixHash, memStats.Alloc/1e6)
 
 	set_status := func(status string) {
 		v.Debug.Println(status)
@@ -116,6 +120,8 @@ func (v *Via) ComputeMatrix(matrixHash string) {
 		panic("decode error: " + err.Error())
 	}
 
+	buf.Reset()
+
 	country, _ := rc.Hget(matrixHash, "country")
 
 	matrixData := struct {
@@ -133,23 +139,31 @@ func (v *Via) ComputeMatrix(matrixHash string) {
 	set_status("computing")
 	// todo: use nodes
 	var res string
-	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile), v.DataDir)
-	// something weird might happen with rapidjson serialization - fix this
-	// case 1: missing }
-	if strings.Index(res, "}") == -1 {
-		res = res + "}"
-		v.Debug.Println("brace missing")
-	} else if strings.Index(res, "}") != len(res)-1 {
-		braceIndex := strings.Index(res, "}")
-		//junk := res[braceIndex+1:]
-		res = res[:braceIndex+1]
-	}
 
-	rc.Hset(matrixHash, "result", []byte(res))
+	res = ch.Calc_dm(string(json_data), string(country), int(speed_profile), v.DataDir)
+
+	var matrix map[string][]int
+	if err := json.NewDecoder(strings.NewReader(res)).Decode(&matrix); err != nil {
+		set_status("error")
+		v.Debug.Println("failed to parse CH results")
+	}
 	res = ""
+
+	buf.Reset()
+	enc := gob.NewEncoder(buf)
+	if err := enc.Encode(matrix); err != nil {
+		set_status("error")
+		v.Debug.Println("failed to encode CH matrix into a byte form")
+	}
+	rc.Hset(matrixHash, "result", buf.Bytes())
+	buf.Reset()
 
 	t1 := time.Since(t0)
 	v.Debug.Println("calculated matrix in", t1)
 
 	set_status("complete")
+
+	runtime.GC()
+	runtime.ReadMemStats(&memStats)
+	v.Debug.Printf("Computation completed with memory usage still at %d mb.\n", memStats.Alloc/1e6)
 }

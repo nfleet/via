@@ -68,7 +68,7 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
         r = requests.post(burl, data=json.dumps(payload), timeout=time_out)
         # got created response
         now_req = time.time()
-        if r.status_code == 201:
+        if r.status_code == 202:
             # wait before polling
             time.sleep(1)
             
@@ -88,17 +88,20 @@ def run_tests(n_tests, matrix_dim, time_out, target_country, speed_profile, prin
                 if poll_req.status_code == 303:
                     done = True
                     break
+                elif poll_req.status_code >= 400 and poll_req.status_code < 500:
+                    print("%d %s" % (poll_req.status_code, poll_req.text))
+                    break
                 elif poll_req.status_code == 502:
                     output(0, "%d" % poll_req.status_code)
                     output(0, "ACHTUNG! Server down... " + Fore.RED + "HALT!")
-                    sys.exit(-1)
+                    break
                 try:
                     res = poll_req.json()
                     progress = res['progress']
                     output(1, "%s... " % progress, False)
                     sys.stdout.flush()
                 except simplejson.scanner.JSONDecodeError, e:
-                    print(e)
+                    print("%d %s" % (poll_req.status_code, poll_req.text))
                 time.sleep(1)
 
             output(1, " done.")

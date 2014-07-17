@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -30,11 +33,6 @@ func contains(a int, list []int) bool {
 func (server *Server) PostMatrix(ctx *web.Context) {
 	var hash string
 	var computed bool
-	stuff, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
-		ctx.Abort(400, err.Error())
-		return
-	}
 
 	// Parse params
 	var paramBlob struct {
@@ -43,7 +41,7 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 		SpeedProfile float64 `json:"speed_profile"`
 		RatiosHash   string  `json:"ratios"`
 	}
-	if err := json.Unmarshal(stuff, &paramBlob); err != nil {
+	if err := json.NewDecoder(ctx.Request.Body).Decode(&paramBlob); err != nil {
 		ctx.Abort(400, err.Error())
 		return
 	}
@@ -76,12 +74,13 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 		}
 
 	} else {
-		ctx.Abort(400, "Missing or invalid matrix data, speed profile, or country. You sent: "+string(stuff))
+		body, _ := ioutil.ReadAll(ctx.Request.Body)
+		ctx.Abort(400, "Missing or invalid matrix data, speed profile, or country. You sent: "+string(body))
 		return
 	}
 
 	loc := fmt.Sprintf("/matrix/%s", hash)
-	ctx.Redirect(201, loc)
+	ctx.Redirect(202, loc)
 }
 
 type Result struct {
@@ -96,81 +95,120 @@ type Result struct {
 func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 	progress, err := server.Via.GetMatrixComputationProgress(resource)
 	if err != nil {
-		ctx.Abort(500, err.Error())
+		ctx.Abort(410, err.Error())
 		return ""
 	}
-
-	fmt.Println(progress)
 
 	if progress == "complete" {
 		url := fmt.Sprintf("/matrix/%s/result", resource)
 		server.Via.Debug.Println("redirect ->", url)
 		ctx.Redirect(303, url)
+		return ""
 	} else {
 		ctx.ContentType("json")
-		result := Result{Progress: progress, Matrix: map[string][]int{}}
-		msg, _ := json.Marshal(result)
-		return string(msg)
+		ctx.WriteHeader(202)
+		json.NewEncoder(ctx.ResponseWriter).Encode(struct {
+			Progress string `json:"progress"`
+		}{progress})
+		return ""
 	}
-
-	return ""
 }
 
 func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string {
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	server.Via.Debug.Printf("getting matrix result, memory used %d MB.\n", memStats.Alloc/1e6)
+
 	if ex, _ := server.Via.Client.Exists(resource); !ex {
-		ctx.Abort(500, "Result expired. POST again.")
-		return ""
+		ctx.WriteHeader(410)
+		return fmt.Sprintf("Matrix for hash %s has expired. POST again.", resource)
 	}
 
 	progress, err := server.Via.GetMatrixComputationProgress(resource)
 	if err != nil {
-		ctx.Abort(403, err.Error())
+		ctx.WriteHeader(500)
+		return fmt.Sprintf("Failed to retrieve computation progress from redis: %s", err.Error())
 	}
 
 	if progress != "complete" {
-		ctx.Abort(403, "Computation is not ready yet.")
-		return ""
+		ctx.WriteHeader(403)
+		return "Computation is not ready yet."
 	}
 
+	orig := resource
 	if exists, _ := server.Via.Client.Hexists(resource, "see"); exists {
 		server.Via.Debug.Println("Got proxy result")
-		pointer, _ := server.Via.Client.Hget(resource, "see")
+		pointer, err := server.Via.Client.Hget(resource, "see")
+		if err != nil {
+			server.Via.Debug.Println("Proxy result invalid.")
+		}
 		resource = string(pointer)
 	}
 
 	data, err := server.Via.Client.Hget(resource, "result")
 	if err != nil {
-		ctx.Abort(500, "Redis error: "+err.Error())
-		return ""
+		ctx.WriteHeader(500)
+		return "Redis error: " + err.Error()
 	}
 
 	ratios, err := server.Via.Client.Hget(resource, "ratiosHash")
 	if err != nil {
-		ctx.Abort(500, "Redis error: "+err.Error())
-		return ""
+		ctx.WriteHeader(500)
+		return "Redis error: " + err.Error()
 	}
 
 	sp, err := server.Via.Client.Hget(resource, "speed_profile")
 	if err != nil {
-		ctx.Abort(500, "Redis error: "+err.Error())
-		return ""
+		ctx.WriteHeader(500)
+		return "Redis error: " + err.Error()
+	}
+
+	_, err = server.Via.Client.Expire(resource, int64(server.Via.Expiry))
+	if err != nil {
+		ctx.WriteHeader(500)
+		return fmt.Sprintf("Redis error: failed to reset expiry on key %s: %s", resource, err.Error())
+	}
+
+	if orig != resource {
+		_, err = server.Via.Client.Expire(orig, int64(server.Via.Expiry))
+		if err != nil {
+			ctx.WriteHeader(500)
+			return fmt.Sprintf("Redis error: failed to reset expiry on key %s: %s", resource, err.Error())
+		}
 	}
 
 	speed_profile, _ := binary.Varint(sp)
 
 	if data != nil {
-		ctx.ContentType("json")
+		runtime.ReadMemStats(&memStats)
+		server.Via.Debug.Printf("before decoding: %d mb", memStats.Alloc/1e6)
 		var mat map[string][]int
-		if err := json.Unmarshal(data, &mat); err != nil {
-			ctx.Abort(500, "Could not parse json matrix from ch: "+err.Error())
-			return ""
+		if err := gob.NewDecoder(bytes.NewReader(data)).Decode(&mat); err != nil {
+			ctx.WriteHeader(500)
+			return "Failed to parse matrix from Redis: " + err.Error()
 		}
+		data = []byte{}
 
 		result := Result{Progress: "complete", Matrix: mat, RatiosHash: string(ratios), SpeedProfile: int(speed_profile)}
-		str, _ := json.Marshal(result)
-		return string(str)
+		mat = map[string][]int{}
+
+		runtime.ReadMemStats(&memStats)
+		server.Via.Debug.Printf("before writing results: %d mb", memStats.Alloc/1e6)
+
+		ctx.ContentType("json")
+		if err := json.NewEncoder(ctx.ResponseWriter).Encode(result); err != nil {
+			fmt.Println("aaguh")
+		}
+		result = Result{}
+
+		runtime.ReadMemStats(&memStats)
+		server.Via.Debug.Printf("before nil assignments: %d mb", memStats.Alloc/1e6)
+
 	}
 
+	runtime.GC()
+	runtime.ReadMemStats(&memStats)
+	server.Via.Debug.Printf("exiting matrix result, memory used %d MB.\n", memStats.Alloc/1e6)
 	return ""
 }
 
@@ -189,8 +227,6 @@ func (server *Server) GetServerStatus(ctx *web.Context) string {
 }
 
 func (server *Server) PostPaths(ctx *web.Context) string {
-	content, err := ioutil.ReadAll(ctx.Request.Body)
-
 	var input struct {
 		Paths        []geotypes.NodeEdge
 		Country      string
@@ -201,7 +237,8 @@ func (server *Server) PostPaths(ctx *web.Context) string {
 		computed []geotypes.Path
 	)
 
-	if err := json.Unmarshal(content, &input); err != nil {
+	if err := json.NewDecoder(ctx.Request.Body).Decode(&input); err != nil {
+		content, _ := ioutil.ReadAll(ctx.Request.Body)
 		ctx.Abort(400, "Couldn't parse JSON: "+err.Error()+" in '"+string(content)+"'")
 		return ""
 	} else {
