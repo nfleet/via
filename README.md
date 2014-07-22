@@ -8,11 +8,11 @@ via - fast shortest path computation
 Installing via
 --------------
 
-To compile via, first install the following:
+To compile via, first install the following (Debian/Ubuntu packages in parens):
 
   * rapidjson 0.11 (https://code.google.com/p/rapidjson/)
-  * boost C++ libraries
-  * Go 1.3
+  * boost C++ libraries (libboost-dev)
+  * Go 1.3 (use godeb: http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go)
   * Redis
   * SWIG 3.0.2
 
