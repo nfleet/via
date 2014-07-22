@@ -31,6 +31,7 @@ func contains(a int, list []int) bool {
 // If on the other hand matrix is data is not missing,
 // but makes no sense, it returns 422 Unprocessable Entity.
 func (server *Server) PostMatrix(ctx *web.Context) {
+	defer runtime.GC()
 	var hash string
 	var computed bool
 
@@ -93,6 +94,7 @@ type Result struct {
 // Returns a computation from the server as identified by the resource parameter
 // in GET.
 func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
+	defer runtime.GC()
 	progress, err := server.Via.GetMatrixComputationProgress(resource)
 	if err != nil {
 		ctx.Abort(410, err.Error())
@@ -115,6 +117,7 @@ func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 }
 
 func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string {
+	defer runtime.GC()
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 	server.Via.Debug.Printf("getting matrix result, memory used %d MB.\n", memStats.Alloc/1e6)

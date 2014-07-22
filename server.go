@@ -15,6 +15,7 @@ import (
 
 	// register this postgres driver with the SQL module
 	_ "github.com/lib/pq"
+	_ "net/http/pprof"
 )
 
 type (
@@ -118,6 +119,10 @@ func main() {
 	web.Post("/paths", server.PostPaths)
 
 	web.Match("OPTIONS", "/(.*)", Options)
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	web.Run(fmt.Sprintf("%s:%d", config.Host, config.Port))
 }

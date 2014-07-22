@@ -66,11 +66,6 @@ type NodeEdge struct {
 	Target int `json:"target"`
 }
 
-type DistanceNodeEdge struct {
-	Distance int
-	NodeEdge
-}
-
 type PathsInput struct {
 	SpeedProfile int
 	Edges        []Edge
