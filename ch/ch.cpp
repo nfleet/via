@@ -249,8 +249,10 @@ const std::string calc_paths(const std::string& json_data,
     rapidjson::Value out_doc_internal;
     out_doc_internal.SetObject();
 
-    for (EdgeID e = 0; e <= num_edges; e++) {
-      result_internal.PushBack(a.node(e), out_doc.GetAllocator());
+    if (num_edges > 0) {
+      for (EdgeID e = 0; e <= num_edges; e++) {
+        result_internal.PushBack(a.node(e), out_doc.GetAllocator());
+      }
     }
 
     rapidjson::Value plen(w);
