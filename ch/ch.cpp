@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <omp.h>
 using namespace std;
 
@@ -55,8 +56,7 @@ MyGraph* loadGraph(const std::string& country, const int speed_profile,
   ifstream inGraph(path.c_str(), ios::binary);
 
   if (!inGraph) {
-    std::cerr << "Input file '" << path << "' could not be read." << endl;
-    exit(-1);
+    throw std::invalid_argument("Input file " + filename.str() + " could not be read.");
   }
 
   MyGraph* graph = new MyGraph(inGraph);
@@ -64,14 +64,19 @@ MyGraph* loadGraph(const std::string& country, const int speed_profile,
   return graph;
 }
 
-
 const std::string calc_dm(const std::string& json_data,
                           const std::string& country, const int speed_profile,
                           const std::string& dataDir) {
   rapidjson::Document d;
   LevelID earlyStopLevel = 10;
+  MyGraph* graph;
 
-  MyGraph* graph = loadGraph(country, speed_profile, dataDir);
+  try {
+    graph = loadGraph(country, speed_profile, dataDir);
+  }
+  catch (std::invalid_argument& e) {
+    return "{}";
+  }
 
   d.Parse<0>(json_data.c_str());
 
@@ -218,7 +223,14 @@ const std::string calc_paths(const std::string& json_data,
 
   const clock_t begin_time = clock();
 
-  MyGraph* graph = loadGraph(country, speed_profile, dataDir);
+  MyGraph* graph;
+
+  try {
+    graph = loadGraph(country, speed_profile, dataDir);
+  }
+  catch (std::invalid_argument& e) {
+    return "{}";
+  }
 
   d.Parse<0>(json_data.c_str());
   // cout <<"Load and parse: "<<float( clock () - begin_time ) /  CLOCKS_PER_SEC
