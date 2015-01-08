@@ -56,7 +56,7 @@ MyGraph* loadGraph(const std::string& country, const int speed_profile,
   ifstream inGraph(path.c_str(), ios::binary);
 
   if (!inGraph) {
-    throw std::invalid_argument("Input file " + filename.str() + " could not be read.");
+    throw std::invalid_argument("File " + filename.str() + " could not be read.");
   }
 
   MyGraph* graph = new MyGraph(inGraph);

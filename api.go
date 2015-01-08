@@ -9,13 +9,12 @@ import (
 	"io/ioutil"
 	"runtime"
 	"strings"
-	"syscall"
 
 	"github.com/hoisie/web"
 	"github.com/nfleet/via/geotypes"
 )
 
-var allowed_speeds = []int{40, 60, 80, 100, 120}
+var allowedSpeeds = []int{40, 60, 80, 100, 120}
 
 func contains(a int, list []int) bool {
 	for _, b := range list {
@@ -54,8 +53,8 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 	ok := len(data) > 0 && country != "" && sp > 0
 	if ok {
 		// Sanitize speed profile.
-		if !contains(sp, allowed_speeds) {
-			msg := fmt.Sprintf("speed profile '%d' makes no sense, must be one of %s", sp, fmt.Sprint(allowed_speeds))
+		if !contains(sp, allowedSpeeds) {
+			msg := fmt.Sprintf("speed profile '%d' makes no sense, must be one of %s", sp, fmt.Sprint(allowedSpeeds))
 			ctx.Abort(422, msg)
 			return
 		}
@@ -106,14 +105,13 @@ func (server *Server) GetMatrix(ctx *web.Context, resource string) string {
 		server.Via.Debug.Println("redirect ->", url)
 		ctx.Redirect(303, url)
 		return ""
-	} else {
-		ctx.ContentType("json")
-		ctx.WriteHeader(202)
-		json.NewEncoder(ctx.ResponseWriter).Encode(struct {
-			Progress string `json:"progress"`
-		}{progress})
-		return ""
 	}
+	ctx.ContentType("json")
+	ctx.WriteHeader(202)
+	json.NewEncoder(ctx.ResponseWriter).Encode(struct {
+		Progress string `json:"progress"`
+	}{progress})
+	return ""
 }
 
 func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string {
@@ -180,7 +178,7 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 		}
 	}
 
-	speed_profile, _ := binary.Varint(sp)
+	speedProfile, _ := binary.Varint(sp)
 
 	if data != nil {
 		runtime.ReadMemStats(&memStats)
@@ -192,8 +190,12 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 		}
 		data = []byte{}
 
-		result := Result{Progress: "complete", Matrix: mat, RatiosHash: string(ratios), SpeedProfile: int(speed_profile)}
-		mat = map[string][]int{}
+		result := Result{
+			Progress:     "complete",
+			Matrix:       mat,
+			RatiosHash:   string(ratios),
+			SpeedProfile: int(speedProfile),
+		}
 
 		runtime.ReadMemStats(&memStats)
 		server.Via.Debug.Printf("before writing results: %d mb", memStats.Alloc/1e6)
@@ -216,14 +218,8 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 }
 
 func (server *Server) GetServerStatus(ctx *web.Context) string {
-	s := syscall.Statfs_t{}
-	syscall.Statfs("./", &s)
-	space := (uint64(s.Bsize) * s.Bavail) / 1000000000
-	err_disk := space < 2
-
-	if err_disk != false {
-		ctx.Abort(500, fmt.Sprintf("Disk space is below 2G!"))
-		return ""
+	if _, err := server.Via.Client.Ping(); err != nil {
+		return fmt.Sprintf("ERROR: Redis responded with %s", err.Error())
 	}
 
 	return "OK"
