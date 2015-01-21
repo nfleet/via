@@ -45,6 +45,7 @@ type Address struct {
 	Confidence      float64
 	Resolution      int
 	Country         string
+	CountryCode     string
 	HouseNumber     int
 	PostalCode      string
 	Region          string
