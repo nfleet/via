@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/hex"
@@ -13,34 +13,25 @@ import (
 	"time"
 
 	"github.com/nfleet/via/ch"
+	viaErr "github.com/nfleet/via/error"
 )
 
-func CreateMatrixHash(matrixData, country string, speed_profile int) string {
-	hash := sha256.New()
-	data := fmt.Sprintf("%s%s%d", matrixData, country, speed_profile)
-	hash.Write([]byte(data))
-	md := hash.Sum(nil)
-	return hex.EncodeToString(md)
+func CreateMatrixHash() string {
+	b := make([]byte, 32)
+	rand.Reader.Read(b)
+	d := make([]byte, hex.EncodedLen(len(b)))
+	hex.Encode(d, b)
+	return string(d)
 }
 
-// Creates a computation ID by getting an ID for it in Redis.
+// CreateMatrixComputation creates a computation ID by getting an ID for it in Redis.
 // Uses matrix to create a hash for the data, which is the raw string data that
 // has not been parsed into JSON. Stores parsedData into Redis in binary format.
 // Returns the hash to be used with Redis and true whether a proxy resource was created,
 // false if the resource is new.
-func (v *Via) CreateMatrixComputation(matrix []int, ratiosHash, country string, speed_profile int) (string, bool) {
+func (v *Via) CreateMatrixComputation(matrix []int, ratiosHash, country string, speedProfile int) string {
 	c := v.Client
-	matrixHash := CreateMatrixHash(fmt.Sprint(matrix), country, speed_profile)
-	// check if computation exists
-	if exists, _ := c.Exists(matrixHash); exists {
-		// make this one just point to that node, perturb the hash for uniqueness
-		newHash := CreateMatrixHash(fmt.Sprint(matrixHash)+string(time.Now().UnixNano()), country, speed_profile)
-		c.Hset(newHash, "see", []byte(matrixHash))
-		ttl, _ := c.Ttl(matrixHash)
-		c.Expire(newHash, ttl)
-		v.Debug.Printf("Created proxy resource %s (expires in %d sec)", newHash, ttl)
-		return newHash, true
-	}
+	matrixHash := CreateMatrixHash()
 
 	c.Hset(matrixHash, "progress", []byte("initializing"))
 	c.Hset(matrixHash, "result", []byte("0"))
@@ -48,7 +39,7 @@ func (v *Via) CreateMatrixComputation(matrix []int, ratiosHash, country string, 
 	c.Hset(matrixHash, "ratiosHash", []byte(ratiosHash))
 
 	bif := make([]byte, 8)
-	n := binary.PutVarint(bif, int64(speed_profile))
+	n := binary.PutVarint(bif, int64(speedProfile))
 	c.Hset(matrixHash, "speed_profile", bif[:n])
 
 	// convert data into binary things
@@ -62,7 +53,7 @@ func (v *Via) CreateMatrixComputation(matrix []int, ratiosHash, country string, 
 	c.Expire(matrixHash, int64(v.Expiry))
 	v.Debug.Printf("Created computation resource %s (ttl: %d sec)", matrixHash, v.Expiry)
 
-	return matrixHash, false
+	return matrixHash
 }
 
 // Returns computation progress for the matrix identified by matrixHash.
@@ -70,12 +61,7 @@ func (v *Via) GetMatrixComputationProgress(matrixHash string) (string, error) {
 	c := v.Client
 	workingHash := matrixHash
 	if exists, _ := c.Exists(workingHash); !exists {
-		return "", fmt.Errorf("No matrix found for hash %s. It is likely the resource has expired. I recommend posting a new matrix.")
-	}
-	if exists, _ := c.Hexists(workingHash, "see"); exists {
-		v.Debug.Println("Resolving proxy")
-		pointer, _ := c.Hget(workingHash, "see")
-		workingHash = string(pointer)
+		return "", viaErr.NewRequestError(viaErr.ReqErrMatrixNotFound, fmt.Sprintf("Matrix not found for hash %s.", matrixHash))
 	}
 	progress, err := c.Hget(workingHash, "progress")
 	if err != nil {

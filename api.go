@@ -32,7 +32,6 @@ func contains(a int, list []int) bool {
 func (server *Server) PostMatrix(ctx *web.Context) {
 	defer runtime.GC()
 	var hash string
-	var computed bool
 
 	// Parse params
 	var paramBlob struct {
@@ -68,10 +67,8 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			return
 		}
 
-		hash, computed = server.Via.CreateMatrixComputation(data, paramBlob.RatiosHash, country, sp)
-		if !computed {
-			go server.Via.ComputeMatrix(hash)
-		}
+		hash = server.Via.CreateMatrixComputation(data, paramBlob.RatiosHash, country, sp)
+		go server.Via.ComputeMatrix(hash)
 
 	} else {
 		body, _ := ioutil.ReadAll(ctx.Request.Body)
@@ -136,16 +133,6 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 		return "Computation is not ready yet."
 	}
 
-	orig := resource
-	if exists, _ := server.Via.Client.Hexists(resource, "see"); exists {
-		server.Via.Debug.Println("Got proxy result")
-		pointer, err := server.Via.Client.Hget(resource, "see")
-		if err != nil {
-			server.Via.Debug.Println("Proxy result invalid.")
-		}
-		resource = string(pointer)
-	}
-
 	data, err := server.Via.Client.Hget(resource, "result")
 	if err != nil {
 		ctx.WriteHeader(500)
@@ -168,14 +155,6 @@ func (server *Server) GetMatrixResult(ctx *web.Context, resource string) string 
 	if err != nil {
 		ctx.WriteHeader(500)
 		return fmt.Sprintf("Redis error: failed to reset expiry on key %s: %s", resource, err.Error())
-	}
-
-	if orig != resource {
-		_, err = server.Via.Client.Expire(orig, int64(server.Via.Expiry))
-		if err != nil {
-			ctx.WriteHeader(500)
-			return fmt.Sprintf("Redis error: failed to reset expiry on key %s: %s", resource, err.Error())
-		}
 	}
 
 	speedProfile, _ := binary.Varint(sp)
