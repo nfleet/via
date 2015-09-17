@@ -2,14 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/ane/redis"
 	"io/ioutil"
 )
 
 type Via struct {
 	Debug   Debugging
 	Expiry  int
-	Client  redis.Client
 	DataDir string
 }
 
@@ -36,11 +34,10 @@ func LoadConfig(file string) (ViaConfig, error) {
 	return config, nil
 }
 
-func NewVia(debug bool, client redis.Client, expiry int, dataDir string) *Via {
+func NewVia(debug bool, expiry int, dataDir string) *Via {
 	return &Via{
 		Debug:   Debugging(debug),
 		Expiry:  expiry,
-		Client:  client,
 		DataDir: dataDir,
 	}
 }

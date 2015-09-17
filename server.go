@@ -10,12 +10,12 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/ane/redis"
 	"github.com/hoisie/web"
 
 	// register this postgres driver with the SQL module
-	_ "github.com/lib/pq"
 	_ "net/http/pprof"
+
+	_ "github.com/lib/pq"
 )
 
 type (
@@ -81,13 +81,6 @@ func main() {
 		return
 	}
 
-	client := redis.Client{Addr: config.RedisAddr, Password: config.RedisPass}
-	log.Printf("connecting to redis server at %s... ", client.Addr)
-	if _, err := client.Ping(); err != nil {
-		log.Println("error: ", err.Error())
-		return
-	}
-
 	// Handle SIGINT and SIGKILL
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGABRT)
@@ -103,7 +96,7 @@ func main() {
 
 	log.Printf("starting server, running on %d cores...", procs)
 
-	via := NewVia(Debug, client, expiry, config.DataDir)
+	via := NewVia(Debug, expiry, config.DataDir)
 	server := Server{Via: via, Host: config.Host, Port: config.Port, AllowedCountries: config.AllowedCountries}
 
 	// Basic
@@ -111,8 +104,6 @@ func main() {
 	web.Get("/status", server.GetServerStatus)
 
 	// Dmatrix
-	web.Get("/matrix/(.*)/result", server.GetMatrixResult)
-	web.Get("/matrix/(.*)$", server.GetMatrix)
 	web.Post("/matrix/", server.PostMatrix)
 
 	// Path
