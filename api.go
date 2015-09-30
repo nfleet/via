@@ -81,6 +81,7 @@ func (server *Server) PostMatrix(ctx *web.Context) {
 			SpeedProfile: sp,
 		}
 
+		ctx.WriteHeader(200)
 		ctx.ContentType("json")
 		if err := json.NewEncoder(ctx.ResponseWriter).Encode(result); err != nil {
 			viaErr.NewError(viaErr.ErrMatrixComputation, "Failed to encode results to response writer.").WriteTo(ctx.ResponseWriter)
