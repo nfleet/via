@@ -1,7 +1,7 @@
 {
 	"Port": 1337,
-	"DbUser": "ane",
-	"DbName": "spp",
+	"Host": "0.0.0.0",
+	"DataDir": "/home/ane/maps/",
 	"AllowedCountries": {
 		"finland": true,
 		"germany": true

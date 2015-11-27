@@ -12,9 +12,10 @@ To compile via, first install the following (Debian/Ubuntu packages in parens):
 
   * rapidjson 0.11 (https://code.google.com/p/rapidjson/)
   * boost C++ libraries (libboost-dev)
-  * Go 1.3 (use godeb: http://blog.labix.org/2013/06/15/in-flight-deb-packages-of-go)
-  * Redis
-  * SWIG 3.0.2
+  * Go 1.5 
+  * SWIG 3.0.6 (if you update your Go version, check the [release notes](http://tip.golang.org/doc/go1.5) for the correct SWIG version)
+
+It will not compile on anything but Linux.
 
 Once those are taken care of, simply run:
 
